@@ -28,7 +28,7 @@ const init = () => {
     });
     renderer.pixelRation = window.devicePixelRatio;
     renderer.setSize(_WIDTH, _HEIGHT);
-    renderer.setClearColor(0x00FF00)
+    renderer.setClearColor(0x000000)
 
     container.appendChild(renderer.domElement);
 

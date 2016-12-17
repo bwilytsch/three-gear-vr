@@ -1,19 +1,20 @@
 'use strict';
 const iconURL = 'assets/oculus.svg';
-const siteURL = 'ovrweb:http://vr.madebybojan.com/gear-vr ';
+
 
 require('es6-promise-polyfill');
 
 let vrDisplay;
 
 class GearVR {
-    constructor(source){
+    constructor(source, path){
 
         this.source = source
+        path = path || '';
 
         // Create Oculus Icon
         let icon = document.createElement('a');
-        icon.href = siteURL;
+        icon.href = "ovrweb:" + window.location.href.toString() + path;
         icon.style.position = "fixed";
         icon.style.width = "24px";
         icon.style.height = "24px";
@@ -53,13 +54,13 @@ class GearVR {
             })
         } else {
             // WebVR not supported
+            // Start normal experience
             requestAnimationFrame(this.animate);
         }
     }
     start(){
         if ( vrDisplay === undefined ) return;
-        vrDisplay.requestPresent([{source: this.source.domElement}]).then(
-        () => {
+        vrDisplay.requestPresent([{source: this.source.domElement}]).then(() => {
             vrDisplay.requestAnimationFrame(this.animateVR);
         });
     }
