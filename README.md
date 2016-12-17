@@ -1,2 +1,2 @@
 ## GearVR + ThreeJS webvr boilerplate
-[demo](https://vr.madebybojan.com/gear-vr)
+[demo](http://vr.madebybojan.com/gear-vr)
