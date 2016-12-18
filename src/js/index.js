@@ -26,7 +26,7 @@ const init = () => {
     renderer = new THREE.WebGLRenderer({
         antialise: true
     });
-    renderer.pixelRation = window.devicePixelRatio;
+    renderer.setPixelRatio( window.devicePixelRatio );
     renderer.setSize(_WIDTH, _HEIGHT);
     renderer.setClearColor(0x000000)
 
@@ -52,18 +52,22 @@ const init = () => {
     scene.add(skyBox);
 
     // Insert Test Object
+    let targets = new THREE.Group();
+    scene.add(targets);
+
+
     testMesh = new THREE.Mesh(
         new THREE.BoxBufferGeometry(1,1,1),
         new THREE.MeshBasicMaterial({
-            color: 0xFF0000,
+            color: 0x00FF00,
         })
     )
 
     testMesh.position.z = -4;
-    scene.add(testMesh);
+    targets.add(testMesh);
 
     // Add GearVR support
-    gearVR = new GearVR(renderer);
+    gearVR = new GearVR(renderer, camera, targets);
     gearVR.connect(render, update);
     
     bindEventListeners();
@@ -96,3 +100,5 @@ const update = () => {
 window.onload = () => {
     init();
 }
+
+// This is a comment 

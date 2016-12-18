@@ -38,6 +38,7 @@ module.exports = {
     devServer: {
         historyApiFallback: true,
         watchOptions: { aggregateTimeout: 300, poll: 1000 },
+        host: '0.0.0.0',
         headers: {
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
