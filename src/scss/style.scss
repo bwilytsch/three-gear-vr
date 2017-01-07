@@ -9,4 +9,13 @@ html, body {
     position: relative;
 }
 
+// Debug styles
+.crosshair {
+    position: fixed;
+    bottom: 24px;
+    left: 24px;
+    width: 128px;
+    height: 128px;
+    background: red;
+}
 

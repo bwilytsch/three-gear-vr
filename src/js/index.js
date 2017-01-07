@@ -12,6 +12,11 @@ import * as THREE from 'three';
 import VRControls from 'three/examples/js/controls/VRControls';
 import VREffect from 'three/examples/js/effects/VREffect';
 
+// CUSTOM SHADERS
+let Particles;
+const vs = require('./shaders/shader.vert');
+const fs = require('./shaders/shader.frag');
+
 let renderer, scene,camera, testMesh, skyBox, container;
 let effect, controls;
 
@@ -51,17 +56,59 @@ const init = () => {
     )
     scene.add(skyBox);
 
+    // Insert Particles
+    let partCount = 10000;
+    let distance =  3;
+
+    let uniforms = {
+        time: {
+            type: 'f',
+            value: 0,
+        }
+    }
+
+    let bufferMaterial = new THREE.ShaderMaterial({
+        vertexShader: vs,
+        fragmentShader: fs,
+        uniforms,
+        side: THREE.DoubleSide,
+    })
+
+
+    let positions = new Float32Array( partCount * 3 );
+    for ( let i = 0; i < partCount * 3; i += 3 ) {
+            positions[i + 0] = Math.random() * distance - distance/2;
+            positions[i + 1] = Math.random() * distance - distance/2;
+            positions[i + 2] = Math.random() * distance - distance/2;
+    }
+    let geometry = new THREE.BufferGeometry();
+    geometry.addAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
+
+    Particles = new THREE.Points(
+        geometry,
+        bufferMaterial
+    )
+
+    scene.add(Particles);
+
     // Insert Test Object
     let targets = new THREE.Group();
     scene.add(targets);
 
-
     testMesh = new THREE.Mesh(
         new THREE.BoxBufferGeometry(1,1,1),
         new THREE.MeshBasicMaterial({
-            color: 0x00FF00,
+            color: 0x363636,
         })
     )
+
+    testMesh.trigger = function(){
+        this.material.color.setHex( 0x0000FF );
+    }
+
+    testMesh.reset = function(){
+        this.material.color.setHex( 0x363636 );
+    }
 
     testMesh.position.z = -4;
     targets.add(testMesh);
@@ -89,12 +136,14 @@ const onWindowResize = () => {
 
 const render = () => {
     effect.render(scene, camera);
+
 }
 
 const update = () => {
     controls.update();
     testMesh.rotation.x += 0.02;
     testMesh.rotation.y += 0.02;
+    Particles.material.uniforms.time.value += 0.0002;
 }
 
 window.onload = () => {
