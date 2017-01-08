@@ -89,7 +89,7 @@ const init = () => {
         bufferMaterial
     )
 
-    scene.add(Particles);
+    // scene.add(Particles);
 
     // Insert Test Object
     let targets = new THREE.Group();
@@ -112,9 +112,21 @@ const init = () => {
 
     testMesh.position.z = -4;
     targets.add(testMesh);
+    
+    let floor = new THREE.Mesh(
+        new THREE.PlaneBufferGeometry(64,64,1),
+        new THREE.MeshBasicMaterial({
+            color: 0x151515,
+        })
+    )
+
+    floor.name = "floor";
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = -0.8;
+    targets.add(floor);
 
     // Add GearVR support
-    gearVR = new GearVR(renderer, camera, targets);
+    gearVR = new GearVR(renderer, camera, scene, targets);
     gearVR.connect(render, update);
     
     bindEventListeners();

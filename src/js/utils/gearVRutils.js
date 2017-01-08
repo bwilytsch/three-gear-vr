@@ -2,6 +2,7 @@
 const iconURL = 'assets/oculus.svg';
 import * as THREE from 'three';
 import { TweenMax } from 'gsap';
+import Compass from './compass';
 
 require('es6-promise-polyfill');
 
@@ -13,18 +14,23 @@ const PI = Math.PI;
 let dt = 0;
 
 class GearVR {
-    constructor(source, camera, targets, params = {
+    constructor(source, camera, scene, targets, params = {
         hasCrossHair: true,
         path: '',
     }){
 
         this.source = source;
         this.camera = camera;
+        this.scene = scene
         this.targets = targets;
         this.hasGamePad = false;
         this.gamePad = null;
         this.clock = new THREE.Clock();
         this.clock.start();
+
+        console.log(targets.children);
+
+        this.compass = new Compass(this.camera, this.scene);
 
         this.hasCrossHair = params.hasCrossHair;
         this.crossHair = {
@@ -191,14 +197,6 @@ class GearVR {
         this.ctx.arc(this.canvas.width/2, this.canvas.height/2, this.canvas.width * 0.12, 0, PI * 2);
         this.ctx.fill();
         this.ctx.closePath();
-     
-        // Draw Test Cone
-        // this.ctx.beginPath();
-        // this.ctx.strokeStyle = '#FFFFFF';
-        // this.ctx.lineWidth = this.canvas.width * 0.06;
-        // this.ctx.arc(this.canvas.width/2, this.canvas.height/2, this.canvas.width * 0.36, this.crossHair.startAngle, this.crossHair.endAngle)
-        // this.ctx.stroke();
-        // this.ctx.closePath();
 
         this.texture.needsUpdate = true;
 
@@ -219,9 +217,12 @@ class GearVR {
         } } )
     }
     activateObject(){
-        if ( INTERSECTED )
-        INTERSECTED.trigger();
-        this.hideLoader();
+        if ( INTERSECTED ){
+            if ( typeof INTERSECTED.trigger === 'function' ){
+                INTERSECTED.trigger();
+            }
+            this.hideLoader();
+        }
     }
     animate(){
         this.update();
@@ -235,6 +236,7 @@ class GearVR {
             let intersects = this.raycaster.intersectObjects(this.targets.children);
 
             if ( intersects.length > 0 ) {
+
                 if ( INTERSECTED != intersects[ 0 ].object ) {
                     if ( INTERSECTED ) INTERSECTED.material.color.setHex( INTERSECTED.currentHex );
                     INTERSECTED = intersects[ 0 ].object;
@@ -242,6 +244,7 @@ class GearVR {
                     this.showLoader();
                     this.clock.start();
                 }
+
             } else {
                 if ( INTERSECTED ) 
                 INTERSECTED.reset();
@@ -270,16 +273,29 @@ class GearVR {
             let intersects = this.raycaster.intersectObjects(this.targets.children);
 
             if ( intersects.length > 0 ) {
+
+                if ( intersects[0].object.name === "floor" && this.camera.rotation.x < -Math.PI * 0.32){
+                    this.compass.update(intersects[0].point);
+                }
+
                 if ( INTERSECTED != intersects[ 0 ].object ) {
                     if ( INTERSECTED ) INTERSECTED.material.color.setHex( INTERSECTED.currentHex );
                     INTERSECTED = intersects[ 0 ].object;
                     INTERSECTED.currentHex = INTERSECTED.material.color.getHex();
-                    this.showLoader();
+                    if ( intersects[0].object.name !== "floor" ){
+                        this.showLoader();
+                    } else {
+                        this.hideLoader();
+                    }
                 }
             } else {
                 if ( INTERSECTED ){
+
+                    if ( typeof INTERSECTED.reset === 'function') {
+                        INTERSECTED.reset();
+                    }
+
                     this.hideLoader();
-                    INTERSECTED.reset();
                     INTERSECTED = undefined;
                 }
             }
