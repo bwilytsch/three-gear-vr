@@ -13,12 +13,21 @@ const PI = Math.PI;
 
 let dt = 0;
 
-class GearVR {
-    constructor(source, camera, scene, targets, params = {
-        hasCrossHair: true,
-        path: '',
-    }){
+const calcTheta = (vector) => {
+    return Math.atan2(vector.x,vector.z) + PI;
+}
 
+class GearVR {
+    constructor(
+        source,
+        camera,
+        scene,
+        targets,
+        params = {
+            hasCrossHair: true,
+            path: '',
+        }
+    ){
         this.source = source;
         this.camera = camera;
         this.scene = scene
@@ -27,8 +36,6 @@ class GearVR {
         this.gamePad = null;
         this.clock = new THREE.Clock();
         this.clock.start();
-
-        console.log(targets.children);
 
         this.compass = new Compass(this.camera, this.scene);
 
@@ -52,8 +59,8 @@ class GearVR {
         icon.style.position = "fixed";
         icon.style.width = "24px";
         icon.style.height = "24px";
-        icon.style.bottom = '24px';
-        icon.style.right = '24px';
+        icon.style.top = '16px';
+        icon.style.right = '16px';
         icon.style.display = "block";
         icon.style.cursor = "pointer";
 
@@ -87,17 +94,17 @@ class GearVR {
         crosshair.position.z = -2;
         this.camera.add(crosshair);
 
-        this.updateConeAngle();
         this.drawCrosshair();
 
         // Bind methods
         this.animate = this.animate.bind(this);
         this.connect = this.connect.bind(this);
         this.start = this.start.bind(this);
+        this.startGear = this.startGear.bind(this);
+        this.startDesktop = this.startDesktop.bind(this);
         this.updateGamePad = this.updateGamePad.bind(this);
         this.animateVR = this.animateVR.bind(this);
         this.drawCrosshair = this.drawCrosshair.bind(this);
-        this.updateConeAngle = this.updateConeAngle.bind(this);
         this.activateObject = this.activateObject.bind(this);
         this.showLoader = this.showLoader.bind(this);
         this.hideLoader = this.hideLoader.bind(this);
@@ -124,6 +131,7 @@ class GearVR {
 
     }
     connect(render, update){
+
         this.update = update;
         this.render = render;
         
@@ -131,8 +139,30 @@ class GearVR {
             navigator.getVRDisplays().then((displays) => {
                 if ( displays.length > 0 ){
                     vrDisplay = displays[0];
-                    this.start();
-                    // Vive kickoff
+                    console.log(vrDisplay);
+                    switch(true){
+                        case displays[0].displayName.indexOf('GearVR') !== -1:
+                            this.startGear();
+                            break;
+                        case displays[0].displayName.indexOf('Vive') !== -1:
+                            // Add Vive Controllers;
+                            this.start();
+                            break;
+                        case displays[0].displayName.indexOf('Mouse') !== -1:
+                            let container = document.createElement('div');
+                            container.id = "compass-container";
+                            container.appendChild(this.compass.canvas);
+                            document.body.appendChild(container);
+                            this.compass.lineWidth = 2;
+                            this.compass.outerRadiusMax = 30;
+                            this.compass.radius = 4;
+                            this.compass.canvas.width = 64;
+                            this.compass.canvas.height = 64;
+                            this.startDesktop();
+                            break;
+                        default:
+                            this.start();
+                    }
                 }
             }).catch((err) => {
                 throw err;
@@ -140,14 +170,22 @@ class GearVR {
         } else {
             // WebVR not supported
             // Start normal experience
+            
             requestAnimationFrame(this.animate);
         }
     }
-    start(){
+    startGear(){
         if ( vrDisplay === undefined ) return;
         vrDisplay.requestPresent([{source: this.source.domElement}]).then(() => {
-            vrDisplay.requestAnimationFrame(this.animateVR);
+            vrDisplay.requestAnimationFrame(this.animateVR); 
         });
+    }
+    startDesktop(){
+         vrDisplay.requestAnimationFrame(this.animate);
+    }
+    start(){
+        if ( vrDisplay === undefined ) return;
+        vrDisplay.requestAnimationFrame(this.animateVR);
     }
     updateGamePad(dt){
         let activePad = navigator.getGamepads()[this.gamePad];
@@ -158,10 +196,6 @@ class GearVR {
             }
             this.controllerState.lastEvent = Date.now();
         }
-    }
-    updateConeAngle(angle){
-        this.crossHair.startAngle = angle - PI * 2/3;
-        this.crossHair.endAngle = this.crossHair.startAngle + PI / 2;
     }
     drawCrosshair(){
         this.ctx.clearRect(0,0,this.canvas.width, this.canvas.height);
@@ -229,8 +263,11 @@ class GearVR {
         this.render();
         if ( this.hasCrossHair ){
 
-            this.updateConeAngle(this.camera.rotation.y);
+            let vector = this.camera.getWorldDirection();
+            let theta = calcTheta(vector);
+
             this.drawCrosshair();
+            this.compass.update(theta);
 
             this.raycaster.setFromCamera({x: 0, y: 0}, this.camera);
             let intersects = this.raycaster.intersectObjects(this.targets.children);
@@ -241,15 +278,25 @@ class GearVR {
                     if ( INTERSECTED ) INTERSECTED.material.color.setHex( INTERSECTED.currentHex );
                     INTERSECTED = intersects[ 0 ].object;
                     INTERSECTED.currentHex = INTERSECTED.material.color.getHex();
-                    this.showLoader();
-                    this.clock.start();
+                    if ( intersects[0].object.name !== "floor" ){
+                        this.showLoader();
+                    } else {
+                        this.hideLoader();
+                    }
                 }
 
             } else {
-                if ( INTERSECTED ) 
-                INTERSECTED.reset();
-                INTERSECTED = undefined;
-                this.hideLoader();
+
+               if ( INTERSECTED ){
+
+                    if ( typeof INTERSECTED.reset === 'function') {
+                        INTERSECTED.reset();
+                    }
+
+                    this.hideLoader();
+                    INTERSECTED = undefined;
+                }
+
             }
 
         }
@@ -263,10 +310,6 @@ class GearVR {
         }
         if ( this.hasCrossHair ){
 
-            let vector = this.camera.getWorldDirection();
-            let theta = Math.atan2(vector.x,vector.z) + PI;
-
-            this.updateConeAngle(theta);
             this.drawCrosshair();
 
             this.raycaster.setFromCamera({x: 0, y: 0}, this.camera);
@@ -274,8 +317,18 @@ class GearVR {
 
             if ( intersects.length > 0 ) {
 
-                if ( intersects[0].object.name === "floor" && this.camera.rotation.x < -Math.PI * 0.32){
-                    this.compass.update(intersects[0].point);
+                if ( intersects[0].object.name === "floor"){
+                    let vector = this.camera.getWorldDirection();
+                    let theta = calcTheta(vector);
+                    let point = intersects[0].point;
+
+                    this.compass.update(theta, point);
+
+                    if ( point.distanceTo(this.camera.position) < 4.2){
+                        if (!this.compass.state.isVisible) this.compass.show();
+                    } else {
+                        if (this.compass.state.isVisible) this.compass.hide();
+                    }
                 }
 
                 if ( INTERSECTED != intersects[ 0 ].object ) {

@@ -27,6 +27,8 @@
     "style-loader": "^0.13.1",
     "three": "^0.83.0",
     "webpack": "^1.14.0",
-    "webpack-dev-server": "^1.16.2"
+    "webpack-dev-server": "^1.16.2",
+    "webvr-boilerplate": "^0.4.9",
+    "webvr-polyfill": "^0.9.25"
   }
 }

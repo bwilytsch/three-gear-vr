@@ -11,6 +11,11 @@ let gearVR = null;
 import * as THREE from 'three';
 import VRControls from 'three/examples/js/controls/VRControls';
 import VREffect from 'three/examples/js/effects/VREffect';
+import WebVRManager from 'webvr-boilerplate/build/webvr-manager';
+import 'es6-promise-polyfill';
+import 'webvr-polyfill';
+
+// Add Vive Controller Support
 
 // CUSTOM SHADERS
 let Particles;
@@ -20,10 +25,25 @@ const fs = require('./shaders/shader.frag');
 let renderer, scene,camera, testMesh, skyBox, container;
 let effect, controls;
 
+let manager;
+
 // General
 require('../scss/style.scss');
 let _WIDTH = window.innerWidth,
     _HEIGHT = window.innerHeight;
+
+window.hasNativeWebVRImplementation = !!navigator.getVRDisplays || !!navigator.getVRDevices;
+
+window.WebVRConfig = window.WebVRConfig || {
+    BUFFER_SCALE: 0.5,
+    CARDBOARD_UI_DISABLED: false,
+    ROTATE_INSTRUCTIONS_DISABLED: true,
+    MOUSE_KEYBOARD_CONTROLS_DISABLED: false,
+};
+
+if (/(iphone|ipod|ipad).*os.*(7|8|9)/i.test(navigator.userAgent)) {
+  window.WebVRConfig.BUFFER_SCALE = 1 / window.devicePixelRatio;
+}
 
 const init = () => {
 
@@ -54,7 +74,7 @@ const init = () => {
             color: 0x333333,
         })
     )
-    scene.add(skyBox);
+    // scene.add(skyBox);
 
     // Insert Particles
     let partCount = 10000;
@@ -89,7 +109,7 @@ const init = () => {
         bufferMaterial
     )
 
-    // scene.add(Particles);
+    scene.add(Particles);
 
     // Insert Test Object
     let targets = new THREE.Group();
@@ -110,6 +130,7 @@ const init = () => {
         this.material.color.setHex( 0x363636 );
     }
 
+    testMesh.name = 'Test Object with Label';
     testMesh.position.z = -4;
     targets.add(testMesh);
     
@@ -122,12 +143,20 @@ const init = () => {
 
     floor.name = "floor";
     floor.rotation.x = -Math.PI / 2;
-    floor.position.y = -0.8;
+    floor.position.y = -1.6;
     targets.add(floor);
+
+    let params = {
+        hideButton: false, // Default: false.
+        isUndistorted: false // Default: false.
+    };
+
+    manager = new WebVRManager(renderer, effect, params);
 
     // Add GearVR support
     gearVR = new GearVR(renderer, camera, scene, targets);
     gearVR.connect(render, update);
+    // gearVR.connect(effect.render(scene, camera), update, setupStage);
     
     bindEventListeners();
 
@@ -147,8 +176,7 @@ const onWindowResize = () => {
 }
 
 const render = () => {
-    effect.render(scene, camera);
-
+    manager.render(scene, camera);
 }
 
 const update = () => {
