@@ -130,7 +130,7 @@ const init = () => {
         this.material.color.setHex( 0x363636 );
     }
 
-    testMesh.name = 'Test Object with Label';
+    testMesh.name = 'Exhibit A';
     testMesh.position.z = -4;
     targets.add(testMesh);
     

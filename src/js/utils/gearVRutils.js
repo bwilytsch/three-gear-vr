@@ -42,7 +42,7 @@ class GearVR {
         this.hasCrossHair = params.hasCrossHair;
         this.crossHair = {
             hasIntersection: false,
-            isTriggerered: false,
+            isTriggered: false,
             startAngle: 0,
             endAngle: PI/2,
             loaderRadius: 0.10,
@@ -101,7 +101,7 @@ class GearVR {
         this.connect = this.connect.bind(this);
         this.start = this.start.bind(this);
         this.startGear = this.startGear.bind(this);
-        this.startDesktop = this.startDesktop.bind(this);
+        this.start2D = this.start2D.bind(this);
         this.updateGamePad = this.updateGamePad.bind(this);
         this.animateVR = this.animateVR.bind(this);
         this.drawCrosshair = this.drawCrosshair.bind(this);
@@ -139,7 +139,6 @@ class GearVR {
             navigator.getVRDisplays().then((displays) => {
                 if ( displays.length > 0 ){
                     vrDisplay = displays[0];
-                    console.log(vrDisplay);
                     switch(true){
                         case displays[0].displayName.indexOf('GearVR') !== -1:
                             this.startGear();
@@ -151,6 +150,9 @@ class GearVR {
                         case displays[0].displayName.indexOf('Mouse') !== -1:
                             let container = document.createElement('div');
                             container.id = "compass-container";
+                            let compassText = document.createElement('div');
+                            compassText.id = "compass-text";
+                            container.appendChild(compassText);
                             container.appendChild(this.compass.canvas);
                             document.body.appendChild(container);
                             this.compass.lineWidth = 2;
@@ -158,7 +160,7 @@ class GearVR {
                             this.compass.radius = 4;
                             this.compass.canvas.width = 64;
                             this.compass.canvas.height = 64;
-                            this.startDesktop();
+                            this.start2D();
                             break;
                         default:
                             this.start();
@@ -180,8 +182,9 @@ class GearVR {
             vrDisplay.requestAnimationFrame(this.animateVR); 
         });
     }
-    startDesktop(){
-         vrDisplay.requestAnimationFrame(this.animate);
+    start2D(){
+        this.compass.deviceType = '2D';
+        vrDisplay.requestAnimationFrame(this.animate);
     }
     start(){
         if ( vrDisplay === undefined ) return;
@@ -238,6 +241,7 @@ class GearVR {
     showLoader(){
         console.log('show loader');
         this.crossHair.hasIntersection = true;
+        this.crossHair.isTriggered = false;
         this.clock.start();
         TweenMax.to(this.crossHair, 0.3, { loaderRadius: 0.24 } );
     }
@@ -280,8 +284,10 @@ class GearVR {
                     INTERSECTED.currentHex = INTERSECTED.material.color.getHex();
                     if ( intersects[0].object.name !== "floor" ){
                         this.showLoader();
+                        this.compass.showCSSLabel(INTERSECTED.name);
                     } else {
                         this.hideLoader();
+                        this.compass.hideCSSLabel();
                     }
                 }
 
