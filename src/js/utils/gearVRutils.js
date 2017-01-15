@@ -279,9 +279,8 @@ class GearVR {
             if ( intersects.length > 0 ) {
 
                 if ( INTERSECTED != intersects[ 0 ].object ) {
-                    if ( INTERSECTED ) INTERSECTED.material.color.setHex( INTERSECTED.currentHex );
+                    if ( INTERSECTED );
                     INTERSECTED = intersects[ 0 ].object;
-                    INTERSECTED.currentHex = INTERSECTED.material.color.getHex();
                     if ( intersects[0].object.name !== "floor" ){
                         this.showLoader();
                         this.compass.showCSSLabel(INTERSECTED.name);
@@ -314,9 +313,9 @@ class GearVR {
         if ( this.hasGamePad ){
             this.updateGamePad();
         }
-        if ( this.hasCrossHair ){
+        if (    this.hasCrossHair ){
 
-            this.drawCrosshair();
+            // this.drawCrosshair();
 
             this.raycaster.setFromCamera({x: 0, y: 0}, this.camera);
             let intersects = this.raycaster.intersectObjects(this.targets.children);
@@ -338,9 +337,9 @@ class GearVR {
                 }
 
                 if ( INTERSECTED != intersects[ 0 ].object ) {
-                    if ( INTERSECTED ) INTERSECTED.material.color.setHex( INTERSECTED.currentHex );
+                    // if ( INTERSECTED ) INTERSECTED.material.color.setHex( INTERSECTED.currentHex );
                     INTERSECTED = intersects[ 0 ].object;
-                    INTERSECTED.currentHex = INTERSECTED.material.color.getHex();
+                    // INTERSECTED.currentHex = INTERSECTED.material.color.getHex();
                     if ( intersects[0].object.name !== "floor" ){
                         this.showLoader();
                     } else {

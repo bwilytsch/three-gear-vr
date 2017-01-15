@@ -9,6 +9,9 @@ let gearVR = null;
 
 // THREEJS
 import * as THREE from 'three';
+
+global.THREE = THREE;
+
 import VRControls from 'three/examples/js/controls/VRControls';
 import VREffect from 'three/examples/js/effects/VREffect';
 import WebVRManager from 'webvr-boilerplate/build/webvr-manager';
@@ -22,7 +25,10 @@ let Particles;
 const vs = require('./shaders/shader.vert');
 const fs = require('./shaders/shader.frag');
 
-let renderer, scene,camera, testMesh, skyBox, container;
+const svs = require('./shaders/marbel.vert');
+const sfs = require('./shaders/marbel.frag');
+
+let renderer, scene,camera, testMesh, skyBox, container, targets;
 let effect, controls;
 
 let manager;
@@ -49,11 +55,11 @@ const init = () => {
 
     container = document.getElementById('webgl-container');
     renderer = new THREE.WebGLRenderer({
-        antialise: true
+        antialise: true,
     });
     renderer.setPixelRatio( window.devicePixelRatio );
     renderer.setSize(_WIDTH, _HEIGHT);
-    renderer.setClearColor(0x000000)
+    renderer.setClearColor(0x7b7b7b)
 
     container.appendChild(renderer.domElement);
 
@@ -112,28 +118,74 @@ const init = () => {
     scene.add(Particles);
 
     // Insert Test Object
-    let targets = new THREE.Group();
+    targets = new THREE.Group();
     scene.add(targets);
 
+    let textureLoader = new THREE.TextureLoader();
+
+    let sUniforms = {
+        tex: {
+            type: 't',
+            value: textureLoader.load('assets/studio_light.jpg'),
+        },
+        tNormal: {
+            type: 't',
+            value: textureLoader.load('assets/normal.jpg'),
+        },
+        res: {
+            type: 'v2',
+            value: new THREE.Vector2(window.innerWidth, window.innerHeight),
+        }
+    }
+
+    let studioMaterial = new THREE.ShaderMaterial({
+        vertexShader: svs,
+        fragmentShader: sfs,
+        uniforms: sUniforms,
+        shading: THREE.SmoothShading,
+    })
+
+    studioMaterial.uniforms.tex.value.wrapS = 
+    studioMaterial.uniforms.tex.value.wrapT = 
+    THREE.ClampToEdgeWrapping;
+
+    var loader = new THREE.JSONLoader();
+    loader.load('assets/studio_hires.json', (geometry) => {
+        console.log('add AO object.');
+        let tempMesh = new THREE.Mesh(
+            geometry,
+            new THREE.MeshBasicMaterial({
+                color: 0xFFFFFFF,
+                map: textureLoader.load('assets/studio_hi_res.jpg'),
+            })
+        )
+        tempMesh.name = "AO Test object";
+        scene.add(tempMesh);
+        tempMesh.position.y = 1.2;
+    })
+
     testMesh = new THREE.Mesh(
+        // new THREE.TorusKnotBufferGeometry( 0.5, 0.15, 100, 16 ),
         new THREE.BoxBufferGeometry(1,1,1),
-        new THREE.MeshBasicMaterial({
-            color: 0x363636,
-        })
+        studioMaterial,
     )
 
     testMesh.trigger = function(){
-        this.material.color.setHex( 0x0000FF );
+        console.log(this.name + ' was triggered');
     }
 
     testMesh.reset = function(){
-        this.material.color.setHex( 0x363636 );
+        console.log(this.name + ' was reset');
     }
 
     testMesh.name = 'Exhibit A';
     testMesh.position.z = -4;
+    testMesh.position.y = 1.2;
     targets.add(testMesh);
-    
+
+    start();
+        
+
     let floor = new THREE.Mesh(
         new THREE.PlaneBufferGeometry(64,64,1),
         new THREE.MeshBasicMaterial({
@@ -144,8 +196,13 @@ const init = () => {
     floor.name = "floor";
     floor.rotation.x = -Math.PI / 2;
     floor.position.y = -1.6;
-    targets.add(floor);
+    // targets.add(floor);
+    
+    bindEventListeners();
 
+}
+
+const start = () => {
     let params = {
         hideButton: false, // Default: false.
         isUndistorted: false // Default: false.
@@ -157,9 +214,6 @@ const init = () => {
     gearVR = new GearVR(renderer, camera, scene, targets);
     gearVR.connect(render, update);
     // gearVR.connect(effect.render(scene, camera), update, setupStage);
-    
-    bindEventListeners();
-
 }
 
 const bindEventListeners = () => {

@@ -48,6 +48,7 @@ class Compass {
             })
         )
         this.UI.rotation.x = -PI/2;
+        this.UI.position.y = 0.01;
         this.UI.material.opacity = 0;
 
         // Compass Parameters
@@ -143,12 +144,14 @@ class Compass {
     update(angle, point){
 
         if (point) {
-            point.y += 0.01;
-            this.UI.position.copy(point);
+            this.UI.position.x = point.x;
+            this.UI.position.z = point.z;
         }
 
-        this.updateConeAngle(-angle);
-        this.draw(angle);
+        // Rework this section
+        // Increate performance
+        // this.updateConeAngle(-angle);
+        // this.draw(angle);
 
     }
 }
