@@ -24,11 +24,15 @@
     "html-webpack-plugin": "^2.24.1",
     "node-sass": "^4.0.0",
     "sass-loader": "^4.1.0",
+    "stats.js": "^0.17.0",
     "style-loader": "^0.13.1",
     "three": "^0.83.0",
     "webpack": "^1.14.0",
     "webpack-dev-server": "^1.16.2",
     "webvr-boilerplate": "^0.4.9",
     "webvr-polyfill": "^0.9.25"
+  },
+  "dependencies": {
+    "pixi.js": "^4.3.2"
   }
 }

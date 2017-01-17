@@ -1,8 +1,10 @@
 'use strict';
 const iconURL = 'assets/oculus.svg';
 import * as THREE from 'three';
+import * as PIXI from 'pixi.js';
 import { TweenMax } from 'gsap';
 import Compass from './compass';
+import Stats from 'stats.js';
 
 require('es6-promise-polyfill');
 
@@ -12,6 +14,10 @@ let vrDisplay,
 const PI = Math.PI;
 
 let dt = 0;
+
+let stats = new Stats();
+stats.showPanel(0);
+document.body.appendChild(stats.domElement);
 
 const calcTheta = (vector) => {
     return Math.atan2(vector.x,vector.z) + PI;
@@ -43,13 +49,28 @@ class GearVR {
         this.crossHair = {
             hasIntersection: false,
             isTriggered: false,
+            radius: 256,
+            progress: 0,
             startAngle: 0,
             endAngle: PI/2,
             loaderRadius: 0.10,
         }
-        this.canvas = document.createElement('canvas');
-        this.ctx = this.canvas.getContext('2d');
-        this.texture = new THREE.Texture(this.canvas);
+
+        this.textureRenderer = new PIXI.WebGLRenderer(512,512, {
+            transparent: true,
+            // preserveDrawingBuffer: true,
+            // clearBeforeRender: false,
+        }); 
+        this.stage = new PIXI.Container();
+        this.graphics = new PIXI.Graphics();
+        this.texture = new THREE.Texture(this.textureRenderer.view);
+
+        this.stage.addChild(this.graphics);
+
+
+        // this.canvas = document.createElement('canvas');
+        // this.ctx = this.canvas.getContext('2d');
+        // this.texture = new THREE.Texture(this.canvas);
         
         this.raycaster = new THREE.Raycaster();
 
@@ -76,10 +97,10 @@ class GearVR {
         iconIMG.src = iconURL;
 
         // Crosshair
-        this.canvas.width = 512;
-        this.canvas.height = 512;
+        // this.canvas.width = 512;
+        // this.canvas.height = 512;
 
-        this.canvas.className = 'crosshair';
+        // this.canvas.className = 'crosshair';
         // document.body.appendChild(this.canvas);
 
         let crosshair = new THREE.Mesh(
@@ -93,7 +114,6 @@ class GearVR {
 
         crosshair.position.z = -2;
         this.camera.add(crosshair);
-
         this.drawCrosshair();
 
         // Bind methods
@@ -108,6 +128,10 @@ class GearVR {
         this.activateObject = this.activateObject.bind(this);
         this.showLoader = this.showLoader.bind(this);
         this.hideLoader = this.hideLoader.bind(this);
+        this.drawPercentage = this.drawPercentage.bind(this);
+
+        this.progressAnimation = new TimelineMax({pause: true, onUpdate: this.drawPercentage, onComplete: this.activateObject});
+        this.progressAnimation.fromTo(this.crossHair, 1, {progress: 0}, {progress: 1} )
 
 
         // Connect controller
@@ -172,7 +196,6 @@ class GearVR {
         } else {
             // WebVR not supported
             // Start normal experience
-            
             requestAnimationFrame(this.animate);
         }
     }
@@ -201,58 +224,55 @@ class GearVR {
         }
     }
     drawCrosshair(){
-        this.ctx.clearRect(0,0,this.canvas.width, this.canvas.height);
 
-        // Draw Loader
+        this.graphics.clear();
+
         if ( this.crossHair.hasIntersection ){
 
-            if (dt >= PI * 2 && !this.crossHair.isTriggered){
-                this.activateObject();
-                return;
-            }
-
-            dt = this.clock.getElapsedTime();
-
-            this.ctx.beginPath();
-            this.ctx.strokeStyle = "rgba(255,255,255,0.5)";
-            this.ctx.lineWidth = this.canvas.width * 0.12;
-            this.ctx.arc(this.canvas.width/2, this.canvas.height/2, this.canvas.width * this.crossHair.loaderRadius, 0, PI * 2);
-            this.ctx.stroke();
-            this.ctx.closePath();
-
-            this.ctx.beginPath();
-            this.ctx.strokeStyle = "#FFFFFF";
-            this.ctx.arc(this.canvas.width/2, this.canvas.height/2, this.canvas.width * this.crossHair.loaderRadius, -PI/2, dt - PI/2 );
-            this.ctx.stroke();
-            this.ctx.closePath();
+            // Draw loader Base
+            this.graphics.lineStyle(this.crossHair.radius * 0.24, 0xFFFFFF, 0.5);
+            this.graphics.arc(this.crossHair.radius,this.crossHair.radius,this.crossHair.radius * this.crossHair.loaderRadius, 0, PI * 2 + 0.01);
+            this.graphics.closePath();
 
         }
 
         // Draw Base Cursor
-        this.ctx.beginPath();
-        this.ctx.fillStyle = "#fc3e04";
-        this.ctx.arc(this.canvas.width/2, this.canvas.height/2, this.canvas.width * 0.12, 0, PI * 2);
-        this.ctx.fill();
-        this.ctx.closePath();
+        this.graphics.beginFill(0xFF0000,1);
+        this.graphics.lineStyle(0, 0xFFFFFF, 0);
+        this.graphics.drawCircle(this.crossHair.radius, this.crossHair.radius, this.crossHair.radius * 0.24);
+        this.graphics.endFill();
+
+        console.log('drawing circle');
 
         this.texture.needsUpdate = true;
 
+    }
+    drawPercentage(){
+        this.drawCrosshair();
+        
+        this.graphics.lineStyle(this.crossHair.radius * 0.24, 0xFFFFFF, 1);
+        this.graphics.arc(this.crossHair.radius,this.crossHair.radius,this.crossHair.radius * this.crossHair.loaderRadius, -PI/2, PI * 2  * this.crossHair.progress - PI/2);
+        
     }
     showLoader(){
         console.log('show loader');
         this.crossHair.hasIntersection = true;
         this.crossHair.isTriggered = false;
         this.clock.start();
-        TweenMax.to(this.crossHair, 0.3, { loaderRadius: 0.24 } );
+        TweenMax.to(this.crossHair, 0.3, { loaderRadius: 0.48, onUpdate: this.drawCrosshair, onComplete: () => {
+            this.progressAnimation.restart();
+        } } );
     }
     hideLoader(){
         console.log('hide loader');
         this.crossHair.isTriggered = true;
         this.clock.stop();
+        this.progressAnimation.pause();
         TweenMax.to(this.crossHair, 0.16, { loaderRadius: 0.08, onComplete: () => {
             this.crossHair.hasIntersection = false;
             this.crossHair.isTriggered = false;
-        } } )
+            this.drawCrosshair();
+        }, onUpdate: this.drawCrosshair } )
     }
     activateObject(){
         if ( INTERSECTED ){
@@ -263,14 +283,17 @@ class GearVR {
         }
     }
     animate(){
+        stats.begin();
         this.update();
         this.render();
+        this.textureRenderer.render(this.stage);
+
         if ( this.hasCrossHair ){
 
             let vector = this.camera.getWorldDirection();
             let theta = calcTheta(vector);
 
-            this.drawCrosshair();
+            // this.drawCrosshair();
             this.compass.update(theta);
 
             this.raycaster.setFromCamera({x: 0, y: 0}, this.camera);
@@ -305,15 +328,21 @@ class GearVR {
             }
 
         }
+        stats.end();
         requestAnimationFrame(this.animate);
     }
     animateVR(){
+
+        stats.begin();
+
         this.update();
         this.render();
+        this.textureRenderer.render(this.stage);
+
         if ( this.hasGamePad ){
             this.updateGamePad();
         }
-        if (    this.hasCrossHair ){
+        if ( this.hasCrossHair ){
 
             // this.drawCrosshair();
 
@@ -359,6 +388,9 @@ class GearVR {
             }
 
         }
+
+        stats.end();
+
         vrDisplay.requestAnimationFrame(this.animateVR);
     }
 }

@@ -153,7 +153,7 @@ const init = () => {
     loader.load('assets/studio_hires.json', (geometry) => {
         console.log('add AO object.');
         let tempMesh = new THREE.Mesh(
-            geometry,
+            new THREE.BufferGeometry().fromGeometry(geometry),
             new THREE.MeshBasicMaterial({
                 color: 0xFFFFFFF,
                 map: textureLoader.load('assets/studio_hi_res.jpg'),
