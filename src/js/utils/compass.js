@@ -6,6 +6,9 @@ const getRadians = (angle) => {
     return Math.PI / 180 * angle;
 }
 
+const cfs = require('../shaders/compass.frag');
+const cvs = require('../shaders/compass.vert');
+
 const PI = Math.PI;
 
 // Rewrite getting the text parent container of the compass
@@ -22,7 +25,8 @@ class Compass {
             isVisible: false,
         }
 
-        this.draw = this.draw.bind(this);
+        this.drawCircle = this.drawCircle.bind(this);
+        this.drawTriangle = this.drawTriangle.bind(this);
         this.updateConeAngle = this.updateConeAngle.bind(this);
         this.toggleVisibility = this.toggleVisibility.bind(this);
         this.showCSSLabel = this.showCSSLabel.bind(this);
@@ -37,23 +41,10 @@ class Compass {
         this.canvas.height = 512 * this.size;
         this.canvas.className = 'compass';
         this.ctx = this.canvas.getContext('2d');
-        this.texture = new THREE.Texture(this.canvas);
 
-        this.UI = new THREE.Mesh(
-            new THREE.PlaneBufferGeometry(this.size, this.size,1),
-            new THREE.MeshBasicMaterial({
-                transparent: true,
-                map: this.texture,
-                side: THREE.DoubleSide,
-            })
-        )
-        this.UI.rotation.x = -PI/2;
-        this.UI.position.y = 0.01;
-        this.UI.material.opacity = 0;
-
-        // Compass Parameters
+         // Compass Parameters
         this.radius = 24;
-        this.color = '#FFFFFF';
+        this.color = '#FF0000';
         this.lineWidth = 8;
         this.outerRadius = 0;
         this.outerRadiusMin = 0;
@@ -62,9 +53,53 @@ class Compass {
         this.coneStart = 0;
         this.coneEnd = PI/2;
 
-        this.scene.add(this.UI);
+        this.drawCircle(0);
 
-        this.update(new THREE.Vector3(0,-1.6,-2));
+        this.UI = new THREE.Object3D();
+
+        let textureLoader = new THREE.TextureLoader();
+
+        let uniformsUI = {
+            circleTex: {
+                type: 't',
+                value: textureLoader.load('assets/outerCompass.png')
+            },
+            triangleTex: {
+                type: 't',
+                value: textureLoader.load('assets/innerCompass.png')
+            },
+            angle: {
+                type: 'f',
+                value: 0,
+            }
+        }
+
+        this.drawTriangle();
+
+        let circle = new THREE.Mesh(
+            new THREE.PlaneBufferGeometry(this.size, this.size,1),
+            new THREE.ShaderMaterial({
+                transparent: true,
+                vertexShader: cvs,
+                fragmentShader: cfs,
+                uniforms: uniformsUI,
+                side: THREE.DoubleSide,
+            })
+        )
+
+        this.UI.add(circle);
+
+        this.UI.position.z = -2;
+        this.UI.position.y = -1.1;
+        this.UI.rotation.x = -PI/2;
+
+        // this.UI.position.y = 1;
+        // this.UI.material.opacity = 1;
+
+        this.scene.add(this.UI);
+        console.log(this.UI);
+
+        // this.update(new THREE.Vector3(0,-1.6,-2));
 
     }
     getCSSContainer(){
@@ -106,22 +141,8 @@ class Compass {
         this.coneStart = angle - PI * 2/3;
         this.coneEnd = this.coneStart + PI / 2;
     }
-    draw(angle){
+    drawCircle(angle){
         this.ctx.clearRect(0,0,this.canvas.width, this.canvas.height);
-
-        // Draw Directional Triangle
-        this.ctx.save()
-        this.ctx.beginPath();
-        this.ctx.fillStyle = this.color;
-        // this.ctx.translate(this.canvas.width/2, this.canvas.height/2);
-        // this.ctx.rotate(angle);
-        // this.ctx.translate(-this.canvas.width/2, -this.canvas.height/2);
-        this.ctx.moveTo(this.canvas.width/2, this.canvas.height/2 - this.radius);
-        this.ctx.lineTo(this.canvas.width/2 + this.radius * 1.5, this.canvas.height/2 + this.radius);
-        this.ctx.lineTo(this.canvas.width/2 - this.radius * 1.5, this.canvas.height/2 + this.radius);
-        this.ctx.fill();
-        this.ctx.closePath();
-        this.ctx.restore();
 
         // Draw Outer Line
         this.ctx.beginPath();
@@ -138,8 +159,22 @@ class Compass {
         this.ctx.arc(this.canvas.width/2, this.canvas.height/2, this.outerRadiusMax < this.lineWidth * 2 ? 0 : this.outerRadiusMax - this.lineWidth * 2, this.coneStart, this.coneEnd)
         this.ctx.stroke();
 
-        this.texture.needsUpdate = true;
-
+    }
+    drawTriangle(){
+         this.ctx.clearRect(0,0,this.canvas.width, this.canvas.height);
+        // Draw Directional Triangle
+        this.ctx.save()
+        this.ctx.beginPath();
+        this.ctx.fillStyle = this.color;
+        // this.ctx.translate(this.canvas.width/2, this.canvas.height/2);
+        // this.ctx.rotate(angle);
+        // this.ctx.translate(-this.canvas.width/2, -this.canvas.height/2);
+        this.ctx.moveTo(this.canvas.width/2, this.canvas.height/2 - this.radius);
+        this.ctx.lineTo(this.canvas.width/2 + this.radius * 1.5, this.canvas.height/2 + this.radius);
+        this.ctx.lineTo(this.canvas.width/2 - this.radius * 1.5, this.canvas.height/2 + this.radius);
+        this.ctx.fill();
+        this.ctx.closePath();
+        this.ctx.restore();
     }
     update(angle, point){
 
@@ -147,6 +182,8 @@ class Compass {
             this.UI.position.x = point.x;
             this.UI.position.z = point.z;
         }
+
+        this.UI.children[0].material.uniforms.angle.value = angle;
 
         // Rework this section
         // Increate performance

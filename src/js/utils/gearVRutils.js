@@ -172,18 +172,18 @@ class GearVR {
                             this.start();
                             break;
                         case displays[0].displayName.indexOf('Mouse') !== -1:
-                            let container = document.createElement('div');
-                            container.id = "compass-container";
-                            let compassText = document.createElement('div');
-                            compassText.id = "compass-text";
-                            container.appendChild(compassText);
-                            container.appendChild(this.compass.canvas);
-                            document.body.appendChild(container);
-                            this.compass.lineWidth = 2;
-                            this.compass.outerRadiusMax = 30;
-                            this.compass.radius = 4;
-                            this.compass.canvas.width = 64;
-                            this.compass.canvas.height = 64;
+                            // let container = document.createElement('div');
+                            // container.id = "compass-container";
+                            // let compassText = document.createElement('div');
+                            // compassText.id = "compass-text";
+                            // container.appendChild(compassText);
+                            // container.appendChild(this.compass.canvas);
+                            // document.body.appendChild(container);
+                            // this.compass.lineWidth = 2;
+                            // this.compass.outerRadiusMax = 30;
+                            // this.compass.radius = 4;
+                            // this.compass.canvas.width = 64;
+                            // this.compass.canvas.height = 64;
                             this.start2D();
                             break;
                         default:
@@ -306,10 +306,10 @@ class GearVR {
                     INTERSECTED = intersects[ 0 ].object;
                     if ( intersects[0].object.name !== "floor" ){
                         this.showLoader();
-                        this.compass.showCSSLabel(INTERSECTED.name);
+                        // this.compass.showCSSLabel(INTERSECTED.name);
                     } else {
                         this.hideLoader();
-                        this.compass.hideCSSLabel();
+                        // this.compass.hideCSSLabel();
                     }
                 }
 
@@ -349,14 +349,15 @@ class GearVR {
             this.raycaster.setFromCamera({x: 0, y: 0}, this.camera);
             let intersects = this.raycaster.intersectObjects(this.targets.children);
 
+            let vector = this.camera.getWorldDirection();
+            let theta = calcTheta(vector);
+            // let point = intersects[0].point;
+
+            this.compass.update(theta);
+
             if ( intersects.length > 0 ) {
 
                 if ( intersects[0].object.name === "floor"){
-                    let vector = this.camera.getWorldDirection();
-                    let theta = calcTheta(vector);
-                    let point = intersects[0].point;
-
-                    this.compass.update(theta, point);
 
                     if ( point.distanceTo(this.camera.position) < 4.2){
                         if (!this.compass.state.isVisible) this.compass.show();

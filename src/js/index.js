@@ -156,7 +156,7 @@ const init = () => {
             new THREE.BufferGeometry().fromGeometry(geometry),
             new THREE.MeshBasicMaterial({
                 color: 0xFFFFFFF,
-                map: textureLoader.load('assets/studio_hi_res.jpg'),
+                map: textureLoader.load('assets/studio_hi_res_tiles.jpg'),
             })
         )
         tempMesh.name = "AO Test object";
