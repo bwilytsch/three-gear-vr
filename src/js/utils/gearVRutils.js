@@ -5,6 +5,7 @@ import * as PIXI from 'pixi.js';
 import { TweenMax } from 'gsap';
 import Compass from './compass';
 import Stats from 'stats.js';
+import Store from './globalStorage';
 
 require('es6-promise-polyfill');
 
@@ -34,6 +35,7 @@ class GearVR {
             path: '',
         }
     ){
+
         this.source = source;
         this.camera = camera;
         this.scene = scene
@@ -66,11 +68,6 @@ class GearVR {
         this.texture = new THREE.Texture(this.textureRenderer.view);
 
         this.stage.addChild(this.graphics);
-
-
-        // this.canvas = document.createElement('canvas');
-        // this.ctx = this.canvas.getContext('2d');
-        // this.texture = new THREE.Texture(this.canvas);
         
         this.raycaster = new THREE.Raycaster();
 
@@ -97,12 +94,6 @@ class GearVR {
         iconIMG.src = iconURL;
 
         // Crosshair
-        // this.canvas.width = 512;
-        // this.canvas.height = 512;
-
-        // this.canvas.className = 'crosshair';
-        // document.body.appendChild(this.canvas);
-
         let crosshair = new THREE.Mesh(
             new THREE.PlaneBufferGeometry( 0.16, 0.16 ),
             new THREE.MeshBasicMaterial({
@@ -132,7 +123,6 @@ class GearVR {
 
         this.progressAnimation = new TimelineMax({pause: true, onUpdate: this.drawPercentage, onComplete: this.activateObject});
         this.progressAnimation.fromTo(this.crossHair, 1, {progress: 0}, {progress: 1} )
-
 
         // Connect controller
         this.controller = null;
@@ -172,18 +162,19 @@ class GearVR {
                             this.start();
                             break;
                         case displays[0].displayName.indexOf('Mouse') !== -1:
-                            // let container = document.createElement('div');
-                            // container.id = "compass-container";
-                            // let compassText = document.createElement('div');
-                            // compassText.id = "compass-text";
-                            // container.appendChild(compassText);
-                            // container.appendChild(this.compass.canvas);
-                            // document.body.appendChild(container);
-                            // this.compass.lineWidth = 2;
-                            // this.compass.outerRadiusMax = 30;
-                            // this.compass.radius = 4;
-                            // this.compass.canvas.width = 64;
-                            // this.compass.canvas.height = 64;
+                            // Create desktop/2D compass with svgs?
+                            let container = document.createElement('div');
+                            container.id = "compass-container";
+                            let compassText = document.createElement('div');
+                            compassText.id = "compass-text";
+                            let compassDir = document.createElement('div');
+                            compassDir.id = "compass-direction";
+                            let compassArrow = document.createElement('div');
+                            compassArrow.id = "compass-arrow";
+                            container.appendChild(compassArrow);
+                            container.appendChild(compassDir);
+                            container.appendChild(compassText);
+                            document.body.appendChild(container);
                             this.start2D();
                             break;
                         default:
@@ -293,8 +284,7 @@ class GearVR {
             let vector = this.camera.getWorldDirection();
             let theta = calcTheta(vector);
 
-            // this.drawCrosshair();
-            this.compass.update(theta);
+            this.compass.updateCSS(theta);
 
             this.raycaster.setFromCamera({x: 0, y: 0}, this.camera);
             let intersects = this.raycaster.intersectObjects(this.targets.children);
@@ -306,10 +296,10 @@ class GearVR {
                     INTERSECTED = intersects[ 0 ].object;
                     if ( intersects[0].object.name !== "floor" ){
                         this.showLoader();
-                        // this.compass.showCSSLabel(INTERSECTED.name);
+                        this.compass.showCSSLabel(INTERSECTED.name);
                     } else {
                         this.hideLoader();
-                        // this.compass.hideCSSLabel();
+                        this.compass.hideCSSLabel();
                     }
                 }
 
@@ -322,6 +312,7 @@ class GearVR {
                     }
 
                     this.hideLoader();
+                    this.compass.hideCSSLabel();
                     INTERSECTED = undefined;
                 }
 
@@ -349,15 +340,15 @@ class GearVR {
             this.raycaster.setFromCamera({x: 0, y: 0}, this.camera);
             let intersects = this.raycaster.intersectObjects(this.targets.children);
 
-            let vector = this.camera.getWorldDirection();
-            let theta = calcTheta(vector);
-            // let point = intersects[0].point;
-
-            this.compass.update(theta);
-
             if ( intersects.length > 0 ) {
 
                 if ( intersects[0].object.name === "floor"){
+
+                    let vector = this.camera.getWorldDirection();
+                    let theta = calcTheta(vector);
+                    let point = intersects[0].point;
+
+                    this.compass.update(theta, point);
 
                     if ( point.distanceTo(this.camera.position) < 4.2){
                         if (!this.compass.state.isVisible) this.compass.show();

@@ -23,18 +23,27 @@ html, body {
     background: red;
 }
 
+.canvasDummy {
+    position: absolute;
+    bottom: 32px;
+    left: 32px;
+    width: 256px;
+    height: 64px;
+    display: block;
+}
+
 #compass-container {
     position: fixed;
     top: 50%;
-    right: 20px;
+    right: 16px;
     min-width: 36px;
     height: 36px;
-    background: rgba(0,0,0,0.8);
-    // background: red;
     margin: -18px 0 0 0;
+    overflow: hidden;
     border-radius: 18px;
     display: inline-block;
     transition: all 0.3s ease-in-out;
+    background: rgba(0,0,0,0.8);
 }
 
 #compass-text {
@@ -48,11 +57,21 @@ html, body {
     white-space: nowrap;
 }
 
-.compass {
+#compass-arrow {
     width: 32px;
     height: 32px;
     position: absolute;
     top: 2px;
     right: 2px;
+    background: url('../assets/ui_compass_arrow.svg') no-repeat;
+}
+
+#compass-direction {
+    width: 32px;
+    height: 32px;
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: url('../assets/ui_compass_base.svg') no-repeat;
 }
 

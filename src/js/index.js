@@ -15,8 +15,12 @@ global.THREE = THREE;
 import VRControls from 'three/examples/js/controls/VRControls';
 import VREffect from 'three/examples/js/effects/VREffect';
 import WebVRManager from 'webvr-boilerplate/build/webvr-manager';
+import TextToLabel from './utils/textToLabel';
 import 'es6-promise-polyfill';
 import 'webvr-polyfill';
+
+// Global Storage
+import Store from './utils/globalStorage';
 
 // Add Vive Controller Support
 
@@ -31,10 +35,11 @@ const sfs = require('./shaders/marbel.frag');
 let renderer, scene,camera, testMesh, skyBox, container, targets;
 let effect, controls;
 
+require('../scss/style.scss');
+
 let manager;
 
 // General
-require('../scss/style.scss');
 let _WIDTH = window.innerWidth,
     _HEIGHT = window.innerHeight;
 
@@ -68,19 +73,17 @@ const init = () => {
     camera = new THREE.PerspectiveCamera(60, _WIDTH/_HEIGHT, 0.01, 1000);
     scene.add(camera);
 
+    // Store obnjects locally
+    Store.renderer = renderer;
+    Store.scene = scene;
+    Store.camera = camera;
+
     controls = new THREE.VRControls( camera );
     controls.standing = true;
 	effect = new THREE.VREffect( renderer );
 
-    // Create skyBox
-    skyBox = new THREE.Mesh(
-        new THREE.BoxBufferGeometry(24,24,24,24,24,24),
-        new THREE.MeshBasicMaterial({
-            wireframe: true,
-            color: 0x333333,
-        })
-    )
-    // scene.add(skyBox);
+    Store.controls = controls;
+    Store.effect = effect;
 
     // Insert Particles
     let partCount = 10000;
@@ -115,7 +118,7 @@ const init = () => {
         bufferMaterial
     )
 
-    scene.add(Particles);
+    // scene.add(Particles);
 
     // Insert Test Object
     targets = new THREE.Group();
@@ -178,16 +181,13 @@ const init = () => {
         console.log(this.name + ' was reset');
     }
 
-    testMesh.name = 'Exhibit A';
+    testMesh.name = 'Exhibit A: Marbel Bock 675';
     testMesh.position.z = -4;
     testMesh.position.y = 1.2;
     targets.add(testMesh);
-
-    start();
         
-
     let floor = new THREE.Mesh(
-        new THREE.PlaneBufferGeometry(64,64,1),
+        new THREE.PlaneBufferGeometry(22.6,15,1),
         new THREE.MeshBasicMaterial({
             color: 0x151515,
         })
@@ -195,11 +195,13 @@ const init = () => {
 
     floor.name = "floor";
     floor.rotation.x = -Math.PI / 2;
-    floor.position.y = -1.6;
-    // targets.add(floor);
+    floor.position.y = -1.4;
+    targets.add(floor);
+
+    Store.targets = targets;
     
     bindEventListeners();
-
+    start();
 }
 
 const start = () => {
@@ -237,11 +239,10 @@ const update = () => {
     controls.update();
     testMesh.rotation.x += 0.02;
     testMesh.rotation.y += 0.02;
-    Particles.material.uniforms.time.value += 0.0002;
+    // Particles.material.uniforms.time.value += 0.0002;
 }
 
 window.onload = () => {
     init();
 }
 
-// This is a comment 

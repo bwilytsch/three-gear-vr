@@ -2,6 +2,9 @@ var webpack = require('webpack');
 var path = require('path');
 var HtmlWebpackPlugin = require('html-webpack-plugin');
 var CopyWebpackPlugin = require('copy-webpack-plugin');
+var ExtractTextPlugin = require('extract-text-webpack-plugin');
+
+var environment = process.env.NODE_ENV || 'development';
 
 module.exports = {
     context: path.resolve(__dirname),
@@ -32,7 +35,15 @@ module.exports = {
             {
                 test: /\.scss$/,
                 loader: 'style!css!sass',
-            }          
+            },
+            , {
+                test: /\.(mp4|ogg|svg|eot|ttf|woff|woff2|jpg|png)$/,
+                loader: 'file-loader'
+            }
+            // {
+            //     test: /\.scss$/,
+            //     loader: ExtractTextPlugin.extract('css!sass'),
+            // }          
         ]
     },
     devServer: {
@@ -52,7 +63,10 @@ module.exports = {
         }),
         new CopyWebpackPlugin([
             {from: './src/assets', to: './assets'}
-        ])
+        ]),
+        // new ExtractTextPlugin('./css/style.css', {
+        //     allChunks: true
+        // }),
     ],
     node: {
         fs: 'empty'
