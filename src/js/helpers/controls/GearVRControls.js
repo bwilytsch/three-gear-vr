@@ -30,8 +30,8 @@ class GearVRControls {
 
     }
     connectGamepad(){
-        var gamepads = navigator.getGamepads ? navigator.getGamepads() : (navigator.webkitGetGamepads ? navigator.webkitGetGamepads() : []);
-        for ( var i = 0; i < gamepads.length; i++ ){
+        let gamepads = navigator.getGamepads ? navigator.getGamepads() : (navigator.webkitGetGamepads ? navigator.webkitGetGamepads() : []);
+        for ( let i = 0; i < gamepads.length; i++ ){
             if ( gamepads[i] === undefined || gamepads[i] === null ) return;
             let activePad = gamepads[i];
             if ( activePad.id.includes("Gear VR") ){

@@ -13,9 +13,9 @@ import ViveControls from './controls/ViveControls';
 // GearVR
 import GearVRButton from '../utils/gearVRButton';
 
+// Resolve Glare/Crosshair, GearVR GamePad, Mouse, Vive Controller (+ Daydream?)
+
 class ControlsManager {
-    // Resolve Glare/Crosshair, GearVR GamePad, Mouse, Vive Controller ( + Daydream?)
-    // Always needs Raycaster and Store.targets
     constructor(){
         Store.raycaster = new THREE.Raycaster();
 
@@ -37,8 +37,8 @@ class ControlsManager {
          if ( navigator.getVRDisplays ){
             navigator.getVRDisplays().then((displays) => {
                 if ( displays.length > 0 ){
-                    let vrDisplay = displays[0];
-                    console.log(vrDisplay);
+                    Store.vrDisplay = displays[0];
+                    console.log(Store.vrDisplay);
                     switch(true){
                         case displays[0].displayName.indexOf('GearVR') !== -1:
                             // Connect GamePad

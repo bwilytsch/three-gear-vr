@@ -19,20 +19,21 @@ class MouseControls {
         this.onMouseDown = this.onMouseDown.bind(this);
 
         // Add event listeners
-        Store.container.addEventListener('mousedown', this.onMouseDown, false);
+        Store.container.addEventListener('mouseup', this.onMouseDown, false);
         window.addEventListener('mousemove', this.onMouseMove, false);
 
     }
     onMouseDown(e){
         e.preventDefault();
         if ( this._INTERSECTED ){
-            console.log('mousedown!');
+            console.log('mouseup!');
             if ( typeof this._INTERSECTED.trigger === 'function' ){
                 this._INTERSECTED.trigger();
             }
         }
     }
     onMouseMove(e){
+        e.preventDefault();
         this.mousePos.x = (e.clientX / Store.res.width) * 2 - 1;
         this.mousePos.y = -(e.clientY / Store.res.height) * 2 + 1;
     }

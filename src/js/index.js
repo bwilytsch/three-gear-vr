@@ -19,10 +19,6 @@ import 'webvr-polyfill';
 import Store from './helpers/globalStorage';
 import ControlsManager from './helpers/ControlsManager';
 
-// GEARVR
-import GearVR from './helpers/VRCrosshair';
-let gearVR = null;
-
 // CUSTOM SHADERS
 let Particles;
 const vs = require('./shaders/shader.vert');
@@ -129,16 +125,16 @@ const init = () => {
     targets = new THREE.Group();
     scene.add(targets);
 
-    let textureLoader = new THREE.TextureLoader();
+    Store.textureLoader = new THREE.TextureLoader();
 
     let sUniforms = {
         tex: {
             type: 't',
-            value: textureLoader.load('assets/studio_light.jpg'),
+            value: Store.textureLoader.load('assets/studio_light.jpg'),
         },
         tNormal: {
             type: 't',
-            value: textureLoader.load('assets/normal.jpg'),
+            value: Store.textureLoader.load('assets/normal.jpg'),
         },
         res: {
             type: 'v2',
@@ -164,7 +160,7 @@ const init = () => {
             new THREE.BufferGeometry().fromGeometry(geometry),
             new THREE.MeshBasicMaterial({
                 color: 0xFFFFFFF,
-                map: textureLoader.load('assets/studio_hi_res_tiles.jpg'),
+                map: Store.textureLoader.load('assets/studio_hi_res_tiles.jpg'),
             })
         )
         tempMesh.name = "AO Test object";
@@ -214,7 +210,7 @@ const init = () => {
 const start = () => {
     let params = {
         hideButton: false, // Default: false.
-        isUndistorted: false // Default: false.
+        isUndistorted: false, // Default: false.
     };
 
     manager = new WebVRManager(renderer, effect, params);
@@ -224,10 +220,12 @@ const start = () => {
     controlsManager.setControlsType();
 
     // UI manager
+    // Add UI manager here
 
     // GearVR Hack/Workaround
     if ( navigator.getVRDisplays ){
         navigator.getVRDisplays().then((displays) => {
+            Store.vrDisplay = displays[0];
             if ( displays.length > 0 ){
                 if ( displays[0].displayName.indexOf('GearVR') !== -1 ){
                     displays[0].requestPresent([{source: Store.renderer.domElement}]).then(() => {
@@ -239,7 +237,6 @@ const start = () => {
             }
         })
     }
-
 }
 
 const bindEventListeners = () => {
@@ -272,7 +269,7 @@ const animate = () => {
     render();
     update();
     stats.end();
-    requestAnimationFrame(animate);
+    Store.vrDisplay.requestAnimationFrame(animate);
 }
 
 window.onload = () => {
