@@ -36,7 +36,7 @@ module.exports = {
                 test: /\.scss$/,
                 loader: 'style!css!sass',
             },
-            , {
+            {
                 test: /\.(mp4|ogg|svg|eot|ttf|woff|woff2|jpg|png)$/,
                 loader: 'file-loader'
             }

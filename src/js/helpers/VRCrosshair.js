@@ -3,7 +3,9 @@ const iconURL = 'assets/oculus.svg';
 import * as THREE from 'three';
 import * as PIXI from 'pixi.js';
 import { TweenMax } from 'gsap';
-import Compass from './compass';
+import Compass from './VRCompass';
+import ViveControls from './controls/ViveControls';
+import CrosshairControls from './controls/CrosshairControls';
 import Stats from 'stats.js';
 import Store from './globalStorage';
 
@@ -15,10 +17,6 @@ let vrDisplay,
 const PI = Math.PI;
 
 let dt = 0;
-
-let stats = new Stats();
-stats.showPanel(0);
-document.body.appendChild(stats.domElement);
 
 const calcTheta = (vector) => {
     return Math.atan2(vector.x,vector.z) + PI;
@@ -32,9 +30,12 @@ class GearVR {
         targets,
         params = {
             hasCrossHair: true,
+            hasViveControls: true,
             path: '',
         }
     ){
+        
+        console.log('gearvr legacy triggered');
 
         this.source = source;
         this.camera = camera;
@@ -46,30 +47,7 @@ class GearVR {
         this.clock.start();
 
         this.compass = new Compass(this.camera, this.scene);
-
-        this.hasCrossHair = params.hasCrossHair;
-        this.crossHair = {
-            hasIntersection: false,
-            isTriggered: false,
-            radius: 256,
-            progress: 0,
-            startAngle: 0,
-            endAngle: PI/2,
-            loaderRadius: 0.10,
-        }
-
-        this.textureRenderer = new PIXI.WebGLRenderer(512,512, {
-            transparent: true,
-            // preserveDrawingBuffer: true,
-            // clearBeforeRender: false,
-        }); 
-        this.stage = new PIXI.Container();
-        this.graphics = new PIXI.Graphics();
-        this.texture = new THREE.Texture(this.textureRenderer.view);
-
-        this.stage.addChild(this.graphics);
-        
-        this.raycaster = new THREE.Raycaster();
+        this.newCross = new CrosshairControls();
 
         // Create Oculus Icon
         let icon = document.createElement('a');
@@ -93,20 +71,6 @@ class GearVR {
         iconIMG.crossOrigin = '';
         iconIMG.src = iconURL;
 
-        // Crosshair
-        let crosshair = new THREE.Mesh(
-            new THREE.PlaneBufferGeometry( 0.16, 0.16 ),
-            new THREE.MeshBasicMaterial({
-                map: this.texture,
-                transparent: true,
-                side: THREE.DoubleSide,
-            })
-        )
-
-        crosshair.position.z = -2;
-        this.camera.add(crosshair);
-        this.drawCrosshair();
-
         // Bind methods
         this.animate = this.animate.bind(this);
         this.connect = this.connect.bind(this);
@@ -115,14 +79,6 @@ class GearVR {
         this.start2D = this.start2D.bind(this);
         this.updateGamePad = this.updateGamePad.bind(this);
         this.animateVR = this.animateVR.bind(this);
-        this.drawCrosshair = this.drawCrosshair.bind(this);
-        this.activateObject = this.activateObject.bind(this);
-        this.showLoader = this.showLoader.bind(this);
-        this.hideLoader = this.hideLoader.bind(this);
-        this.drawPercentage = this.drawPercentage.bind(this);
-
-        this.progressAnimation = new TimelineMax({pause: true, onUpdate: this.drawPercentage, onComplete: this.activateObject});
-        this.progressAnimation.fromTo(this.crossHair, 1, {progress: 0}, {progress: 1} )
 
         // Connect controller
         this.controller = null;
@@ -159,10 +115,10 @@ class GearVR {
                             break;
                         case displays[0].displayName.indexOf('Vive') !== -1:
                             // Add Vive Controllers;
+                            this.ViveControls = new ViveControls();
                             this.start();
                             break;
                         case displays[0].displayName.indexOf('Mouse') !== -1:
-                            // Create desktop/2D compass with svgs?
                             let container = document.createElement('div');
                             container.id = "compass-container";
                             let compassText = document.createElement('div');
@@ -214,111 +170,11 @@ class GearVR {
             this.controllerState.lastEvent = Date.now();
         }
     }
-    drawCrosshair(){
-
-        this.graphics.clear();
-
-        if ( this.crossHair.hasIntersection ){
-
-            // Draw loader Base
-            this.graphics.lineStyle(this.crossHair.radius * 0.24, 0xFFFFFF, 0.5);
-            this.graphics.arc(this.crossHair.radius,this.crossHair.radius,this.crossHair.radius * this.crossHair.loaderRadius, 0, PI * 2 + 0.01);
-            this.graphics.closePath();
-
-        }
-
-        // Draw Base Cursor
-        this.graphics.beginFill(0xFF0000,1);
-        this.graphics.lineStyle(0, 0xFFFFFF, 0);
-        this.graphics.drawCircle(this.crossHair.radius, this.crossHair.radius, this.crossHair.radius * 0.24);
-        this.graphics.endFill();
-
-        console.log('drawing circle');
-
-        this.texture.needsUpdate = true;
-
-    }
-    drawPercentage(){
-        this.drawCrosshair();
-        
-        this.graphics.lineStyle(this.crossHair.radius * 0.24, 0xFFFFFF, 1);
-        this.graphics.arc(this.crossHair.radius,this.crossHair.radius,this.crossHair.radius * this.crossHair.loaderRadius, -PI/2, PI * 2  * this.crossHair.progress - PI/2);
-        
-    }
-    showLoader(){
-        console.log('show loader');
-        this.crossHair.hasIntersection = true;
-        this.crossHair.isTriggered = false;
-        this.clock.start();
-        TweenMax.to(this.crossHair, 0.3, { loaderRadius: 0.48, onUpdate: this.drawCrosshair, onComplete: () => {
-            this.progressAnimation.restart();
-        } } );
-    }
-    hideLoader(){
-        console.log('hide loader');
-        this.crossHair.isTriggered = true;
-        this.clock.stop();
-        this.progressAnimation.pause();
-        TweenMax.to(this.crossHair, 0.16, { loaderRadius: 0.08, onComplete: () => {
-            this.crossHair.hasIntersection = false;
-            this.crossHair.isTriggered = false;
-            this.drawCrosshair();
-        }, onUpdate: this.drawCrosshair } )
-    }
-    activateObject(){
-        if ( INTERSECTED ){
-            if ( typeof INTERSECTED.trigger === 'function' ){
-                INTERSECTED.trigger();
-            }
-            this.hideLoader();
-        }
-    }
     animate(){
         stats.begin();
         this.update();
         this.render();
-        this.textureRenderer.render(this.stage);
-
-        if ( this.hasCrossHair ){
-
-            let vector = this.camera.getWorldDirection();
-            let theta = calcTheta(vector);
-
-            this.compass.updateCSS(theta);
-
-            this.raycaster.setFromCamera({x: 0, y: 0}, this.camera);
-            let intersects = this.raycaster.intersectObjects(this.targets.children);
-
-            if ( intersects.length > 0 ) {
-
-                if ( INTERSECTED != intersects[ 0 ].object ) {
-                    if ( INTERSECTED );
-                    INTERSECTED = intersects[ 0 ].object;
-                    if ( intersects[0].object.name !== "floor" ){
-                        this.showLoader();
-                        this.compass.showCSSLabel(INTERSECTED.name);
-                    } else {
-                        this.hideLoader();
-                        this.compass.hideCSSLabel();
-                    }
-                }
-
-            } else {
-
-               if ( INTERSECTED ){
-
-                    if ( typeof INTERSECTED.reset === 'function') {
-                        INTERSECTED.reset();
-                    }
-
-                    this.hideLoader();
-                    this.compass.hideCSSLabel();
-                    INTERSECTED = undefined;
-                }
-
-            }
-
-        }
+        this.newCross.update();
         stats.end();
         requestAnimationFrame(this.animate);
     }
@@ -329,6 +185,10 @@ class GearVR {
         this.update();
         this.render();
         this.textureRenderer.render(this.stage);
+
+        if ( this.hasViveControls ){
+            this.ViveControls.update();
+        }
 
         if ( this.hasGamePad ){
             this.updateGamePad();

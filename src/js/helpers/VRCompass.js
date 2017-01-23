@@ -1,16 +1,9 @@
 'use strict';
 import * as THREE from 'three';
 import { TweenMax, TimelineMax } from 'gsap';
+import { getDegrees } from '../utils/math';
 
 const PI = Math.PI;
-
-const getRadians = (angle) => {
-    return PI / 180 * angle;
-}
-
-const getDegrees = (angle) => {
-    return angle / PI * 180;
-}
 
 let degrees = 0;
 

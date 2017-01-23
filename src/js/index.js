@@ -3,10 +3,6 @@
 // Include Gamepad Controls
 // Controller with crosshair
 
-// GEARVR
-import GearVR from './utils/gearVRutils';
-let gearVR = null;
-
 // THREEJS
 import * as THREE from 'three';
 
@@ -15,14 +11,17 @@ global.THREE = THREE;
 import VRControls from 'three/examples/js/controls/VRControls';
 import VREffect from 'three/examples/js/effects/VREffect';
 import WebVRManager from 'webvr-boilerplate/build/webvr-manager';
-import TextToLabel from './utils/textToLabel';
+import Stats from 'stats.js';
 import 'es6-promise-polyfill';
 import 'webvr-polyfill';
 
 // Global Storage
-import Store from './utils/globalStorage';
+import Store from './helpers/globalStorage';
+import ControlsManager from './helpers/ControlsManager';
 
-// Add Vive Controller Support
+// GEARVR
+import GearVR from './helpers/VRCrosshair';
+let gearVR = null;
 
 // CUSTOM SHADERS
 let Particles;
@@ -38,10 +37,16 @@ let effect, controls;
 require('../scss/style.scss');
 
 let manager;
+let controlsManager;
+
+let stats = new Stats();
+stats.showPanel(0);
+document.body.appendChild(stats.domElement);
 
 // General
-let _WIDTH = window.innerWidth,
-    _HEIGHT = window.innerHeight;
+Store.res = {};
+Store.res.width = window.innerWidth;
+Store.res.height = window.innerHeight;
 
 window.hasNativeWebVRImplementation = !!navigator.getVRDisplays || !!navigator.getVRDevices;
 
@@ -58,19 +63,19 @@ if (/(iphone|ipod|ipad).*os.*(7|8|9)/i.test(navigator.userAgent)) {
 
 const init = () => {
 
-    container = document.getElementById('webgl-container');
+    Store.container = document.getElementById('webgl-container');
     renderer = new THREE.WebGLRenderer({
         antialise: true,
     });
     renderer.setPixelRatio( window.devicePixelRatio );
-    renderer.setSize(_WIDTH, _HEIGHT);
+    renderer.setSize(Store.res.width, Store.res.height);
     renderer.setClearColor(0x7b7b7b)
 
-    container.appendChild(renderer.domElement);
+    Store.container.appendChild(renderer.domElement);
 
     scene = new THREE.Scene();
 
-    camera = new THREE.PerspectiveCamera(60, _WIDTH/_HEIGHT, 0.01, 1000);
+    camera = new THREE.PerspectiveCamera(60, Store.res.width/Store.res.height, 0.01, 1000);
     scene.add(camera);
 
     // Store obnjects locally
@@ -185,7 +190,9 @@ const init = () => {
     testMesh.position.z = -4;
     testMesh.position.y = 1.2;
     targets.add(testMesh);
-        
+    
+    // Needs specular & texture map and shadows on vive (and lower devices?)
+
     let floor = new THREE.Mesh(
         new THREE.PlaneBufferGeometry(22.6,15,1),
         new THREE.MeshBasicMaterial({
@@ -212,10 +219,27 @@ const start = () => {
 
     manager = new WebVRManager(renderer, effect, params);
 
-    // Add GearVR support
-    gearVR = new GearVR(renderer, camera, scene, targets);
-    gearVR.connect(render, update);
-    // gearVR.connect(effect.render(scene, camera), update, setupStage);
+    // Controls manager
+    controlsManager = new ControlsManager();
+    controlsManager.setControlsType();
+
+    // UI manager
+
+    // GearVR Hack/Workaround
+    if ( navigator.getVRDisplays ){
+        navigator.getVRDisplays().then((displays) => {
+            if ( displays.length > 0 ){
+                if ( displays[0].displayName.indexOf('GearVR') !== -1 ){
+                    displays[0].requestPresent([{source: Store.renderer.domElement}]).then(() => {
+                        animate();
+                    });
+                } else {
+                    animate();
+                }
+            }
+        })
+    }
+
 }
 
 const bindEventListeners = () => {
@@ -223,11 +247,11 @@ const bindEventListeners = () => {
 }
 
 const onWindowResize = () => {
-    _WIDTH = window.innerWidth;
-    _HEIGHT = window.innerHeight;
+    Store.res.width = window.innerWidth;
+    Store.res.height = window.innerHeight;
 
-    effect.setSize(_WIDTH, _HEIGHT);
-    camera.aspect = _WIDTH/_HEIGHT;
+    effect.setSize(Store.res.width, Store.res.height);
+    camera.aspect = Store.res.width/Store.res.height;
     camera.updateProjectionMatrix();
 }
 
@@ -237,9 +261,18 @@ const render = () => {
 
 const update = () => {
     controls.update();
+    controlsManager.update();
     testMesh.rotation.x += 0.02;
     testMesh.rotation.y += 0.02;
     // Particles.material.uniforms.time.value += 0.0002;
+}
+
+const animate = () => {
+    stats.begin();
+    render();
+    update();
+    stats.end();
+    requestAnimationFrame(animate);
 }
 
 window.onload = () => {
