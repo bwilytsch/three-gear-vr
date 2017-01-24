@@ -1,2 +1,13 @@
-## GearVR + ThreeJS webvr boilerplate
-[demo](http://vr.madebybojan.com/gear-vr)
+## Interface & Controls Experiment for WebVR
+
+#### Supported devices:
+- Desktop
+- Mobile
+- Cardboard
+- GearVR
+- HTC Vive
+
+[demo](#) (soon)
+
+#### Credits:
+ThreeJS, PixiJS, WebVR-Polyfill, WebVR-Manager;
