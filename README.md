@@ -10,4 +10,4 @@
 [demo](#) (soon)
 
 #### Credits:
-ThreeJS, PixiJS, WebVR-Polyfill, WebVR-Manager;
+[ThreeJS](https://threejs.org), [PixiJS](http://www.pixijs.com/), [WebVR-Polyfill](https://github.com/googlevr/webvr-polyfill), [WebVR-Manager](https://github.com/borismus/webvr-boilerplate)
