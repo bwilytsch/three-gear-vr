@@ -1,5 +1,6 @@
 'use strict';
 
+// Based of crosshair controls
 import CrosshairControls from './CrosshairControls';
 
 // Add red dot crosshair
@@ -24,23 +25,27 @@ class GearVRControls {
             lastButtons: [],
             lastAxes: [],
             lastEvent: Date.now(),
+            isConnected: false,
         }
 
-        this.connectGamepad();        
-
+        window.addEventListener('gamepadconnected', this.connectGamepad);
+        
     }
     connectGamepad(){
         let gamepads = navigator.getGamepads ? navigator.getGamepads() : (navigator.webkitGetGamepads ? navigator.webkitGetGamepads() : []);
+        console.log(gamepads);
         for ( let i = 0; i < gamepads.length; i++ ){
             if ( gamepads[i] === undefined || gamepads[i] === null ) return;
             let activePad = gamepads[i];
             if ( activePad.id.includes("Gear VR") ){
                 this.gamePad = i;
+                this.state.isConnected = true;
                 console.log( "Gear VR GamePad connected and active" );
             }
         }
     }
     updateGamepad(){
+        if (!this.state.isConnected) return;
         let activePad = navigator.getGamepads()[this.gamePad];
         if ( activePad.buttons[0].pressed &&  Date.now() - this.state.lastEvent > 320){
             console.log('pressed');

@@ -20,6 +20,7 @@ class ControlsManager {
         Store.raycaster = new THREE.Raycaster();
 
         this.controls = null;
+        this.mode = 0; // 0: 2D, 1: 3D, 2: 3DC
         
         // Cardboard buffer
         this.touchControls = null;
@@ -32,7 +33,10 @@ class ControlsManager {
     getControls(){
         return this.controls;
     }
-    setControlsType(){
+    getControlsMode(){
+        return this.mode;
+    }
+    setControlsType(callback){
 
          if ( navigator.getVRDisplays ){
             navigator.getVRDisplays().then((displays) => {
@@ -43,29 +47,35 @@ class ControlsManager {
                         case displays[0].displayName.indexOf('GearVR') !== -1:
                             // Connect GamePad
                             this.controls = new GearVRControls();
+                            this.mode = 1;
                             break;
                         case displays[0].displayName.indexOf('Vive') !== -1:
                             // Connetct Vive Controllers;
                             this.controls = new ViveControls();
+                            this.mode = 2;
                             break;
                         case displays[0].displayName.indexOf('Cardboard') !== -1:
                             // Add GearVR button
                             GearVRButton.add();
                             // Connect Touch or Cursor
                             this.getCardboardControls();
+                            this.mode = 1;
                             window.addEventListener('vrdisplaydeviceparamschange', this.getCardboardControls, false)
                             break;
                         case displays[0].displayName.indexOf('Mouse') !== -1:
                             // Connect Mouse
                             this.controls = new MouseControls();
+                            this.mode = 0;
                             break;
                         default:
                             // Connect Gaze Controls
                             this.controls = new CrosshairControls();
+                            this.mode = 1;
                     }
 
                     // Assign update
                     this.update = this.controls.update;
+                    callback(this.mode);
                 }
             }).catch((err) => {
                 throw err;

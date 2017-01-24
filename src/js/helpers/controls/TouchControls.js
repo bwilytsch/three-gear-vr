@@ -13,6 +13,21 @@ class TouchControls {
         
         // Bind methods
         this.onTouchStart = this.onTouchStart.bind(this);
+        this.update = this.update.bind(this);
+
+        // Costum Event to update Interface
+        this.event = new CustomEvent('compasschange', {
+            'detail': {
+                point: 0,
+            }
+        });
+
+        this.controlsTriggeredEvent = new CustomEvent('controlstriggered', {
+            'detail': {
+                actionType: 'DEFAULT',
+                objectName: '',
+            }
+        })
 
         // Add event listeners
         Store.container.addEventListener('touchstart', this.onTouchStart, false);
@@ -33,6 +48,11 @@ class TouchControls {
             if ( this._INTERSECTED != intersects[ 0 ].object ) {
                 if ( this._INTERSECTED );
                 this._INTERSECTED = intersects[ 0 ].object;
+
+                this.controlsTriggeredEvent.detail.actionType = "ADD_INTERSECTION";
+                this.controlsTriggeredEvent.detail.objectName = this._INTERSECTED.name;
+                window.dispatchEvent(this.controlsTriggeredEvent);
+
                 if ( typeof this._INTERSECTED.trigger === 'function') {
                     this._INTERSECTED.trigger();
                 }
@@ -46,6 +66,9 @@ class TouchControls {
                     this._INTERSECTED.reset();
                 }
 
+                this.controlsTriggeredEvent.detail.actionType = "REMOVE_INTERSECTION";
+                window.dispatchEvent(this.controlsTriggeredEvent);
+
                 this._INTERSECTED = undefined;
             }
 
@@ -53,6 +76,10 @@ class TouchControls {
     }
     update(){
         // No regular update
+
+        // Dispatch custom event
+        // Hook for interface manipulation
+        window.dispatchEvent(this.event);
     }
 }
 

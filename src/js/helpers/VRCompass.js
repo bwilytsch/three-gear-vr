@@ -10,7 +10,6 @@ let degrees = 0;
 const cfs = require('../shaders/compass.frag');
 const cvs = require('../shaders/compass.vert');
 
-
 // Rewrite getting the text parent container of the compass
 
 class Compass {

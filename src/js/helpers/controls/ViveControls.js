@@ -13,16 +13,17 @@ const ViveController = require('three/examples/js/vr/ViveController.js');
 class ViveControls {
     constructor(){
 
+        this.controllers = [];
+        this._INTERSECTED = [];
+        this.tempMatrix = new THREE.Matrix4();
+
         // Bind methods
         this.update = this.update.bind(this);
         this.cleanIntersected = this.cleanIntersected.bind(this);
         this.intersectObjects = this.intersectObjects.bind(this);
         this.getIntersections = this.getIntersections.bind(this);
         this.activateObject = this.activateObject.bind(this);
-
-        this.controllers = [];
-        this._INTERSECTED = [];
-        this.tempMatrix = new THREE.Matrix4()
+        this.connectGamePads = this.connectGamepads.bind(this);
 
         // Add light for specular map
         Store.scene.add( new THREE.HemisphereLight( 0x606060, 0x404040 ) );
@@ -35,7 +36,23 @@ class ViveControls {
         
         Store.scene.add( light )
 
+        // Wait for controllers to connect
         this.connectGamepads();
+        window.addEventListener('gamepadconnected', this.connectGamepads);
+
+        // Costum Event to update Interface
+        this.controlsUpdateEvent = new CustomEvent('controlsupdate', {
+            'detail': {
+                point: 0,
+            }
+        });
+        
+        this.controlsTriggeredEvent = new CustomEvent('controlstriggered', {
+            'detail': {
+                actionType: 'DEFAULT',
+                objectName: '',
+            }
+        })
 
     }
     connectGamepads(){
@@ -65,12 +82,16 @@ class ViveControls {
             for (var i = 0; i < gamepads.length; i++ ){
 
                 if (gamepads[i] === null ) return;
-                console.log(i);
                 this.controllers[i] = new THREE.ViveController(i);
                 this.controllers[i].standingMatrix = Store.controls.getStandingMatrix();
                 this.controllers[i].add(object.clone());
                 this.controllers[i].add(line.clone());
                 Store.scene.add(this.controllers[i]);
+
+                // Bind interface to object
+                if ( i === 0 ){
+                    this.controllers[i].children[0].add(Store.interface.mesh);
+                }
 
                 this.controllers[i].addEventListener('triggerdown', this.activateObject, false);
 
@@ -110,6 +131,10 @@ class ViveControls {
                 let intersection = intersections[0];
                 this._INTERSECTED = intersection.object;
                 line.scale.z = intersection.distance;
+
+                this.controlsTriggeredEvent.detail.actionType = "SHOW_COMPASS";
+                window.dispatchEvent(this.controlsTriggeredEvent);
+
             } 
         } else {
             if ( this._INTERSECTED ){
@@ -117,6 +142,9 @@ class ViveControls {
                 if ( typeof this._INTERSECTED.reset === 'function') {
                     this._INTERSECTED.reset();
                 }
+
+                this.controlsTriggeredEvent.detail.actionType = "HIDE_COMPASS";
+                window.dispatchEvent(this.controlsTriggeredEvent);
 
                 this._INTERSECTED = undefined;
             }

@@ -27,6 +27,7 @@ class CrosshairControls {
         }
 
         this._INTERSECTED = undefined;
+        this.point = null;
 
         this.textureRenderer = new PIXI.WebGLRenderer(512,512, {
             transparent: true,
@@ -59,8 +60,21 @@ class CrosshairControls {
         this.draw();
 
         this.progressAnimation = new TimelineMax({pause: true, onUpdate: this.drawPercentage, onComplete: this.activateObject});
-        this.progressAnimation.fromTo(this.state, 1, {progress: 0}, {progress: 1} )
+        this.progressAnimation.fromTo(this.state, 1, {progress: 0}, {progress: 1} );
 
+         // Costum Event to update Interface
+        this.controlsUpdateEvent = new CustomEvent('controlsupdate', {
+            'detail': {
+                point: 0,
+            }
+        });
+        
+        this.controlsTriggeredEvent = new CustomEvent('controlstriggered', {
+            'detail': {
+                actionType: 'DEFAULT',
+                objectName: '',
+            }
+        })
 
     }
     draw(){
@@ -81,8 +95,6 @@ class CrosshairControls {
         this.graphics.lineStyle(0, 0xFFFFFF, 0);
         this.graphics.drawCircle(this.state.radius, this.state.radius, this.state.radius * 0.24);
         this.graphics.endFill();
-
-        // console.log('drawing circle');
 
         this.texture.needsUpdate = true;
 
@@ -123,11 +135,6 @@ class CrosshairControls {
     update(){
         this.textureRenderer.render(this.stage);
 
-        // let vector = this.camera.getWorldDirection();
-        // let theta = calcTheta(vector);
-
-        // this.compass.updateCSS(theta);
-
         Store.raycaster.setFromCamera({x: 0, y: 0}, Store.camera);
         let intersects = Store.raycaster.intersectObjects(Store.targets.children);
 
@@ -135,13 +142,30 @@ class CrosshairControls {
 
             if ( this._INTERSECTED != intersects[ 0 ].object ) {
                 if ( this._INTERSECTED );
-                this._INTERSECTED = intersects[ 0 ].object;
+                    this._INTERSECTED = intersects[ 0 ].object;
                 if ( intersects[0].object.name !== "floor" ){
                     this.showLoader();
-                    // this.compass.showCSSLabel(this._INTERSECTED.name);
                 } else {
                     this.hideLoader();
-                    // this.compass.hideCSSLabel();
+                }
+            }
+
+            if ( intersects[ 0 ].object.name === "floor"){
+                
+                this.point = intersects[ 0 ].point;
+                this.controlsUpdateEvent.detail.point = this.point;
+                window.dispatchEvent(this.controlsUpdateEvent);
+
+                if ( this.point.distanceTo(Store.camera.position) < 4.2){
+                    if (!Store.interface.state.isVisible){
+                        this.controlsTriggeredEvent.detail.actionType = "SHOW_COMPASS";
+                        window.dispatchEvent(this.controlsTriggeredEvent);
+                    };
+                } else {
+                     if (Store.interface.state.isVisible){
+                        this.controlsTriggeredEvent.detail.actionType = "HIDE_COMPASS";
+                        window.dispatchEvent(this.controlsTriggeredEvent);
+                    };
                 }
             }
 
@@ -154,7 +178,6 @@ class CrosshairControls {
                 }
 
                 this.hideLoader();
-                // this.compass.hideCSSLabel();
                 this._INTERSECTED = undefined;
             }
 

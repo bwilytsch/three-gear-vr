@@ -18,6 +18,7 @@ import 'webvr-polyfill';
 // Global Storage
 import Store from './helpers/globalStorage';
 import ControlsManager from './helpers/ControlsManager';
+import InterfaceManager from './helpers/InterfaceManager';
 
 // CUSTOM SHADERS
 let Particles;
@@ -34,6 +35,7 @@ require('../scss/style.scss');
 
 let manager;
 let controlsManager;
+let interfaceManager;
 
 let stats = new Stats();
 stats.showPanel(0);
@@ -215,12 +217,12 @@ const start = () => {
 
     manager = new WebVRManager(renderer, effect, params);
 
+    // UI manager
+    interfaceManager = new InterfaceManager(0);
+
     // Controls manager
     controlsManager = new ControlsManager();
-    controlsManager.setControlsType();
-
-    // UI manager
-    // Add UI manager here
+    controlsManager.setControlsType(interfaceManager.connect);
 
     // GearVR Hack/Workaround
     if ( navigator.getVRDisplays ){

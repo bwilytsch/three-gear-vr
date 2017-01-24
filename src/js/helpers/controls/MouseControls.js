@@ -18,6 +18,20 @@ class MouseControls {
         this.onMouseMove = this.onMouseMove.bind(this);
         this.onMouseDown = this.onMouseDown.bind(this);
 
+        // Costum Event to update Interface
+        this.controlsUpdateEvent = new CustomEvent('controlsupdate', {
+            'detail': {
+                point: 0,
+            }
+        });
+        
+        this.controlsTriggeredEvent = new CustomEvent('controlstriggered', {
+            'detail': {
+                actionType: 'DEFAULT',
+                objectName: '',
+            }
+        })
+        
         // Add event listeners
         Store.container.addEventListener('mouseup', this.onMouseDown, false);
         window.addEventListener('mousemove', this.onMouseMove, false);
@@ -26,8 +40,8 @@ class MouseControls {
     onMouseDown(e){
         e.preventDefault();
         if ( this._INTERSECTED ){
-            console.log('mouseup!');
             if ( typeof this._INTERSECTED.trigger === 'function' ){
+                window.dispatchEvent(this.controlsTriggeredEvent);
                 this._INTERSECTED.trigger();
             }
         }
@@ -41,26 +55,35 @@ class MouseControls {
         Store.raycaster.setFromCamera( this.mousePos, Store.camera);
         let intersects = Store.raycaster.intersectObjects(Store.targets.children);
 
-         if ( intersects.length > 0 ) {
+        if ( intersects.length > 0 ) {
 
             document.body.style.cursor = "pointer";
 
             if ( this._INTERSECTED != intersects[ 0 ].object ) {
                 if ( this._INTERSECTED );
                 this._INTERSECTED = intersects[ 0 ].object;
+
+                this.controlsTriggeredEvent.detail.actionType = "ADD_INTERSECTION";
+                this.controlsTriggeredEvent.detail.objectName = this._INTERSECTED.name;
+                window.dispatchEvent(this.controlsTriggeredEvent);
             }
 
         } else {
 
             if ( this._INTERSECTED ){
-
-
-
                 document.body.style.cursor = "default";
+
+                this.controlsTriggeredEvent.detail.actionType = "REMOVE_INTERSECTION";
+                window.dispatchEvent(this.controlsTriggeredEvent);
+
                 this._INTERSECTED = undefined;
             }
 
         }
+
+        // Dispatch custom event
+        // Hook for interface manipulation
+        window.dispatchEvent(this.controlsUpdateEvent);
     }
 }
 
