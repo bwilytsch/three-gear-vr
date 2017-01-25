@@ -54,6 +54,11 @@ class ControlsManager {
                             this.controls = new ViveControls();
                             this.mode = 2;
                             break;
+                        case displays[0].displayName.indexOf('OpenVR HMD') !== -1:
+                            // Connetct hack Vive Controllers in firefox nightly;
+                            this.controls = new ViveControls(2);
+                            this.mode = 2;
+                            break;
                         case displays[0].displayName.indexOf('Cardboard') !== -1:
                             // Add GearVR button
                             GearVRButton.add();

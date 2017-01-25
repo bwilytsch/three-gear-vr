@@ -25,9 +25,11 @@ class Compass2D {
         let container = document.createElement('div');
         container.id = 'compass-container';
         container.innerHTML  = `
-            <div id="compass-text"></div>
-            <div id="compass-direction"></div>
-            <div id="compass-arrow"></div>
+            <div id="compass-text">Hello World</div>
+            <div id="compass">
+                <div id="compass-direction"></div>
+                <div id="compass-arrow"></div>
+            </div>
         `
         document.body.appendChild(container);
 
@@ -52,13 +54,10 @@ class Compass2D {
     }
     showLabel(text){
         this.textContainer.innerHTML = text;
-        TweenMax.to('#compass-container', 0.3, {width: this.textContainer.clientWidth + 32, onComplete: () => {
-            TweenMax.to('#compass-text', 0.3, {opacity: 1, delay: 0.2});
-        }});
+        TweenMax.to("#compass-text", 0.32, {x: 0, opacity: 1});
     }
     hideLabel(){
-        TweenMax.to('#compass-text', 0.16, {opacity: 0});
-        TweenMax.to('#compass-container', 0.16, { width: 36});
+        TweenMax.to("#compass-text", 0.16, {x: 8, opacity: 0});
     }
     toggleVisibility(){
         this.state.isVisible = !this.state.isVisible;

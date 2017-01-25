@@ -19,6 +19,7 @@ import 'webvr-polyfill';
 import Store from './helpers/globalStorage';
 import ControlsManager from './helpers/ControlsManager';
 import InterfaceManager from './helpers/InterfaceManager';
+import LoadingManagerHelper from './helpers/LoadingManager';
 
 // CUSTOM SHADERS
 let Particles;
@@ -28,14 +29,15 @@ const fs = require('./shaders/shader.frag');
 const svs = require('./shaders/marbel.vert');
 const sfs = require('./shaders/marbel.frag');
 
-let renderer, scene,camera, testMesh, skyBox, container, targets;
-let effect, controls;
+let testMesh, skyBox;
 
 require('../scss/style.scss');
 
 let manager;
 let controlsManager;
 let interfaceManager;
+
+Store.loadingManager = new LoadingManagerHelper();
 
 let stats = new Stats();
 stats.showPanel(0);
@@ -62,31 +64,40 @@ if (/(iphone|ipod|ipad).*os.*(7|8|9)/i.test(navigator.userAgent)) {
 const init = () => {
 
     Store.container = document.getElementById('webgl-container');
-    renderer = new THREE.WebGLRenderer({
+    Store.renderer = new THREE.WebGLRenderer({
         antialise: true,
     });
-    renderer.setPixelRatio( window.devicePixelRatio );
-    renderer.setSize(Store.res.width, Store.res.height);
-    renderer.setClearColor(0x7b7b7b)
+    Store.renderer.setPixelRatio( window.devicePixelRatio );
+    Store.renderer.setSize(Store.res.width, Store.res.height);
+    Store.renderer.setClearColor(0x7b7b7b)
 
-    Store.container.appendChild(renderer.domElement);
+    Store.container.appendChild(Store.renderer.domElement);
 
-    scene = new THREE.Scene();
+    Store.scene = new THREE.Scene();
 
-    camera = new THREE.PerspectiveCamera(60, Store.res.width/Store.res.height, 0.01, 1000);
-    scene.add(camera);
+    Store.camera = new THREE.PerspectiveCamera(60, Store.res.width/Store.res.height, 0.01, 1000);
+    Store.scene.add(Store.camera);
 
-    // Store obnjects locally
-    Store.renderer = renderer;
-    Store.scene = scene;
-    Store.camera = camera;
+    Store.controls = new THREE.VRControls( Store.camera );
+    Store.controls.standing = true;
+	Store.effect = new THREE.VREffect( Store.renderer );
 
-    controls = new THREE.VRControls( camera );
-    controls.standing = true;
-	effect = new THREE.VREffect( renderer );
 
-    Store.controls = controls;
-    Store.effect = effect;
+    // Kickoff all managers
+    let params = {
+        hideButton: false, // Default: false.
+        isUndistorted: false, // Default: false.
+    };
+
+    // Renderer manager
+    manager = new WebVRManager(Store.renderer, Store.effect, params);
+
+    // UI manager
+    interfaceManager = new InterfaceManager(0);
+
+    // Controls manager
+    controlsManager = new ControlsManager();
+    controlsManager.setControlsType(interfaceManager.connect);
 
     // Insert Particles
     let partCount = 10000;
@@ -124,10 +135,10 @@ const init = () => {
     // scene.add(Particles);
 
     // Insert Test Object
-    targets = new THREE.Group();
-    scene.add(targets);
+    Store.targets = new THREE.Group();
+    Store.scene.add(Store.targets);
 
-    Store.textureLoader = new THREE.TextureLoader();
+    Store.textureLoader = new THREE.TextureLoader(Store.loadingManager);
 
     let sUniforms = {
         tex: {
@@ -155,9 +166,8 @@ const init = () => {
     studioMaterial.uniforms.tex.value.wrapT = 
     THREE.ClampToEdgeWrapping;
 
-    var loader = new THREE.JSONLoader();
+    var loader = new THREE.JSONLoader(Store.loadingManager);
     loader.load('assets/studio_hires.json', (geometry) => {
-        console.log('add AO object.');
         let tempMesh = new THREE.Mesh(
             new THREE.BufferGeometry().fromGeometry(geometry),
             new THREE.MeshBasicMaterial({
@@ -166,7 +176,7 @@ const init = () => {
             })
         )
         tempMesh.name = "AO Test object";
-        scene.add(tempMesh);
+        Store.scene.add(tempMesh);
         tempMesh.position.y = 1.2;
     })
 
@@ -184,10 +194,10 @@ const init = () => {
         console.log(this.name + ' was reset');
     }
 
-    testMesh.name = 'Exhibit A: Marbel Bock 675';
+    testMesh.name = 'Exhibit A: Marbel Block 675';
     testMesh.position.z = -4;
     testMesh.position.y = 1.2;
-    targets.add(testMesh);
+    Store.targets.add(testMesh);
     
     // Needs specular & texture map and shadows on vive (and lower devices?)
 
@@ -201,29 +211,14 @@ const init = () => {
     floor.name = "floor";
     floor.rotation.x = -Math.PI / 2;
     floor.position.y = -1.4;
-    targets.add(floor);
-
-    Store.targets = targets;
+    Store.targets.add(floor);
     
     bindEventListeners();
-    start();
+    Store.loadingManager.onLoad = start;
 }
 
 const start = () => {
-    let params = {
-        hideButton: false, // Default: false.
-        isUndistorted: false, // Default: false.
-    };
-
-    manager = new WebVRManager(renderer, effect, params);
-
-    // UI manager
-    interfaceManager = new InterfaceManager(0);
-
-    // Controls manager
-    controlsManager = new ControlsManager();
-    controlsManager.setControlsType(interfaceManager.connect);
-
+    console.log('loading done')
     // GearVR Hack/Workaround
     if ( navigator.getVRDisplays ){
         navigator.getVRDisplays().then((displays) => {
@@ -249,17 +244,17 @@ const onWindowResize = () => {
     Store.res.width = window.innerWidth;
     Store.res.height = window.innerHeight;
 
-    effect.setSize(Store.res.width, Store.res.height);
-    camera.aspect = Store.res.width/Store.res.height;
-    camera.updateProjectionMatrix();
+    Store.effect.setSize(Store.res.width, Store.res.height);
+    Store.camera.aspect = Store.res.width/Store.res.height;
+    Store.camera.updateProjectionMatrix();
 }
 
 const render = () => {
-    manager.render(scene, camera);
+    manager.render(Store.scene, Store.camera);
 }
 
 const update = () => {
-    controls.update();
+    Store.controls.update();
     controlsManager.update();
     testMesh.rotation.x += 0.02;
     testMesh.rotation.y += 0.02;
@@ -274,7 +269,5 @@ const animate = () => {
     Store.vrDisplay.requestAnimationFrame(animate);
 }
 
-window.onload = () => {
-    init();
-}
+window.onload = init();
 

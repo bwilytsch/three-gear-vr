@@ -11,7 +11,7 @@ const OBJLoader = require('three/examples/js/loaders/OBJLoader.js');
 const ViveController = require('three/examples/js/vr/ViveController.js');
 
 class ViveControls {
-    constructor(){
+    constructor(amount){
 
         this.controllers = [];
         this._INTERSECTED = [];
@@ -37,9 +37,17 @@ class ViveControls {
         Store.scene.add( light )
 
         // Wait for controllers to connect
-        this.connectGamepads();
-        window.addEventListener('gamepadconnected', this.connectGamepads);
+        let gamepads = navigator.getGamepads ? navigator.getGamepads() : (navigator.webkitGetGamepads ? navigator.webkitGetGamepads() : []);
 
+        console.log(gamepads);
+
+        if ( gamepads[0] !== null || amount){
+            this.connectGamepads(amount);
+        } else {
+            window.addEventListener('gamepadconnected', this.connectGamepads);
+
+        }
+ 
         // Costum Event to update Interface
         this.controlsUpdateEvent = new CustomEvent('controlsupdate', {
             'detail': {
@@ -55,20 +63,18 @@ class ViveControls {
         })
 
     }
-    connectGamepads(){
+    connectGamepads(amount){
         let gamepads = navigator.getGamepads ? navigator.getGamepads() : (navigator.webkitGetGamepads ? navigator.webkitGetGamepads() : []);
 
-        console.log(gamepads);
-
-        let loader = new THREE.OBJLoader();
+        let loader = new THREE.OBJLoader(Store.loadingManager);
         loader.setPath('./assets/vive-controller/');
-        loader.load('vr_controller_vive_1_5.obj', (object)=>{
+        loader.load('vr_controller_vive_1_5.obj', (object) => {
 
-            let textureLoader = new THREE.TextureLoader();
-            textureLoader.setPath('./assets/vive-controller/');
+            
+            Store.textureLoader.setPath('./assets/vive-controller/');
             let controller = object.children[0];
-            controller.material.map = textureLoader.load('onepointfive_texture.png');
-            controller.material.specularMap = textureLoader.load('onepointfive_spec.png');
+            controller.material.map = Store.textureLoader.load('onepointfive_texture.png');
+            controller.material.specularMap = Store.textureLoader.load('onepointfive_spec.png');
 
             // Add decteion lines
             let lineGeometry = new THREE.Geometry();
@@ -79,7 +85,11 @@ class ViveControls {
             line.name = 'line';
             line.scale.z = 5;
 
-            for (var i = 0; i < gamepads.length; i++ ){
+            let count = amount ? amount : gamepads.length;
+
+            for (var i = 0; i < count; i++ ){
+
+                console.log(i);
 
                 if (gamepads[i] === null ) return;
                 this.controllers[i] = new THREE.ViveController(i);
@@ -91,6 +101,7 @@ class ViveControls {
                 // Bind interface to object
                 if ( i === 0 ){
                     this.controllers[i].children[0].add(Store.interface.mesh);
+                    this.controllers[i].addEventListener('menudown', Store.interface.toggleCompass, false);
                 }
 
                 this.controllers[i].addEventListener('triggerdown', this.activateObject, false);
@@ -132,7 +143,7 @@ class ViveControls {
                 this._INTERSECTED = intersection.object;
                 line.scale.z = intersection.distance;
 
-                this.controlsTriggeredEvent.detail.actionType = "SHOW_COMPASS";
+                this.controlsTriggeredEvent.detail.actionType = "SHOW_LABEL";
                 window.dispatchEvent(this.controlsTriggeredEvent);
 
             } 
@@ -143,7 +154,7 @@ class ViveControls {
                     this._INTERSECTED.reset();
                 }
 
-                this.controlsTriggeredEvent.detail.actionType = "HIDE_COMPASS";
+                this.controlsTriggeredEvent.detail.actionType = "HIDE_LABEL";
                 window.dispatchEvent(this.controlsTriggeredEvent);
 
                 this._INTERSECTED = undefined;

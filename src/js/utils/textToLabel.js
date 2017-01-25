@@ -1,6 +1,6 @@
 'use strict';
 
-import * as THREE from 'three';
+import Store from '../helpers/globalStorage';
 
 class TextToLabel {
     constructor(
@@ -12,9 +12,6 @@ class TextToLabel {
         this.canvas = document.createElement('canvas');
         this.ctx = this.canvas.getContext('2d');
 
-        // ThreeJS
-        this.textureLoader = new THREE.TextureLoader();
-
         this.canvas.width = params.width;
         this.canvas.height = params.height;
 
@@ -22,15 +19,15 @@ class TextToLabel {
 
         // Display canvas for debugging
         this.canvas.className = 'canvasDummy';
-        document.body.appendChild(this.canvas);
+        // document.body.appendChild(this.canvas);
 
     }
     create(text, params = {
         x: 0,
         y: 0,
-        fontSize: 48,
+        fontSize: 64,
         fontWeight: 500,
-        lineHeight: 64,
+        lineHeight: 80,
     }){
         this.ctx.font= params.fontSize + "px Arial";
         this.ctx.textAlign = 'center';
@@ -42,7 +39,7 @@ class TextToLabel {
         let dataURI = this.canvas.toDataURL('image/png', 1.0);
         console.log(dataURI);
 
-        return this.textureLoader.load(dataURI);
+        return Store.textureLoader.load(dataURI);
     }
 }
 

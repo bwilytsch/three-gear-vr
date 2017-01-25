@@ -30,8 +30,6 @@ class InterfaceManager {
     }
     connect(mode){
 
-        console.log(mode);
-
         // Interface
         switch(mode){
             case 0:
