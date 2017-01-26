@@ -21,14 +21,9 @@ class ControlsManager {
 
         this.controls = null;
         this.mode = 0; // 0: 2D, 1: 3D, 2: 3DC
-        
-        // Cardboard buffer
-        this.touchControls = null;
-        this.crosshairControls = null;
 
         // Bind methods
         this.getControls = this.getControls.bind(this);
-        this.getCardboardControls = this.getCardboardControls.bind(this);
     }
     getControls(){
         return this.controls;
@@ -63,9 +58,8 @@ class ControlsManager {
                             // Add GearVR button
                             GearVRButton.add();
                             // Connect Touch or Cursor
-                            this.getCardboardControls();
+                            this.controls = new TouchControls();
                             this.mode = 1;
-                            window.addEventListener('vrdisplaydeviceparamschange', this.getCardboardControls, false)
                             break;
                         case displays[0].displayName.indexOf('Mouse') !== -1:
                             // Connect Mouse
@@ -92,22 +86,6 @@ class ControlsManager {
             // Is this necessary with webvr-polyfill?
         }
 
-    }
-    getCardboardControls(e){
-        let deviceInfo = e ? e.detail.deviceInfo.device : Store.res;
-        if (deviceInfo.width < deviceInfo.height){
-            if (this.touchControls === null){
-                this.touchControls = new TouchControls();
-            }
-            this.controls = this.touchControls;
-        } else {
-            if (this.crosshairControls === null){
-                this.crosshairControls = new CrosshairControls();
-            }
-            this.controls = this.crosshairControls;
-        }
-
-        this.update = this.controls.update;
     }
     update(){
         // Will be replaced by getcControlsType
