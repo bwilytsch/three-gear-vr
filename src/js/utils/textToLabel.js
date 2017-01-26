@@ -1,14 +1,20 @@
 'use strict';
 
 import Store from '../helpers/globalStorage';
+import { TextureLoader } from 'three';
 
 class TextToLabel {
     constructor(
+        manager,
         params = {
             width: 512,
             height: 128,
         }
     ){
+
+        // Needs costum loader for dynmaic content
+        this.textureLoader = new TextureLoader(manager);
+
         this.canvas = document.createElement('canvas');
         this.ctx = this.canvas.getContext('2d');
 
@@ -29,17 +35,18 @@ class TextToLabel {
         fontWeight: 500,
         lineHeight: 80,
     }){
+        console.log(text);
+        this.ctx.clearRect(0,0, this.canvas.width, this.canvas.height);
         this.ctx.font= params.fontSize + "px Arial";
         this.ctx.textAlign = 'center';
-        this.ctx.fillStyle = '#000000';
+        this.ctx.fillStyle = 'rgba(0,0,0,0.2)';
         this.ctx.fillRect(0,0, this.canvas.width, this.canvas.height);
         this.ctx.fillStyle = '#FFFFFF';
         this.ctx.fillText(text,this.canvas.width/2,this.canvas.height/2 + params.fontSize/3);
 
         let dataURI = this.canvas.toDataURL('image/png', 1.0);
-        console.log(dataURI);
 
-        return Store.textureLoader.load(dataURI);
+        return this.textureLoader.load(dataURI);
     }
 }
 

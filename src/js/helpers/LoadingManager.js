@@ -10,7 +10,7 @@ class LoadingManagerHelper {
         this.manager = new THREE.LoadingManager();
 
         this.manager.onStart = (url, itemsLoaded, itemsTotal) => {
-            console.log( 'Started loading file: ' + url + '.\nLoaded ' + itemsLoaded + ' of ' + itemsTotal + ' files.' );
+            console.log( 'Loaded ' + itemsLoaded + ' of ' + itemsTotal + ' files.' );
         }
 
         this.manager.onLoad = () => {
@@ -18,7 +18,7 @@ class LoadingManagerHelper {
         }
 
         this.manager.onProgress = (url, itemsLoaded, itemsTotal) => {
-            console.log( 'Loading file: ' + url + '.\nLoaded ' + itemsLoaded + ' of ' + itemsTotal + ' files.' );
+            console.log( 'Loaded ' + itemsLoaded + ' of ' + itemsTotal + ' files.' );
         }
 
         this.manager.onError = (url) => {

@@ -20,6 +20,7 @@ import Store from './helpers/globalStorage';
 import ControlsManager from './helpers/ControlsManager';
 import InterfaceManager from './helpers/InterfaceManager';
 import LoadingManagerHelper from './helpers/LoadingManager';
+import TextToLabel from './utils/textToLabel';
 
 // CUSTOM SHADERS
 let Particles;
@@ -52,7 +53,7 @@ window.hasNativeWebVRImplementation = !!navigator.getVRDisplays || !!navigator.g
 
 window.WebVRConfig = window.WebVRConfig || {
     BUFFER_SCALE: 0.5,
-    CARDBOARD_UI_DISABLED: false,
+    CARDBOARD_UI_DISABLED: true,
     ROTATE_INSTRUCTIONS_DISABLED: true,
     MOUSE_KEYBOARD_CONTROLS_DISABLED: false,
 };
@@ -139,6 +140,7 @@ const init = () => {
     Store.scene.add(Store.targets);
 
     Store.textureLoader = new THREE.TextureLoader(Store.loadingManager);
+    let textToLabelLoader = new TextToLabel(Store.loadingManager);
 
     let sUniforms = {
         tex: {
@@ -187,14 +189,18 @@ const init = () => {
     )
 
     testMesh.trigger = function(){
+        this.isTriggered = true;
         console.log(this.name + ' was triggered');
     }
 
     testMesh.reset = function(){
+        this.isTriggered = false;
         console.log(this.name + ' was reset');
     }
 
-    testMesh.name = 'Exhibit A: Marbel Block 675';
+    testMesh.name = 'Exhibit A';
+    testMesh.labelTexture = textToLabelLoader.create(testMesh.name);
+    testMesh.isTriggered = false;
     testMesh.position.z = -4;
     testMesh.position.y = 1.2;
     Store.targets.add(testMesh);
@@ -209,6 +215,7 @@ const init = () => {
     )
 
     floor.name = "floor";
+    floor.labelTexture = textToLabelLoader.create(floor.name);
     floor.rotation.x = -Math.PI / 2;
     floor.position.y = -1.4;
     Store.targets.add(floor);

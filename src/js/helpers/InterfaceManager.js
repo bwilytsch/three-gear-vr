@@ -26,6 +26,8 @@ class InterfaceManager {
         // Bind methods
         this.update = this.update.bind(this);
         this.connect = this.connect.bind(this);
+
+        this.rotationRef = null;
         
     }
     connect(mode){
@@ -50,8 +52,15 @@ class InterfaceManager {
         window.addEventListener('controlstriggered', Store.interface.changeState, false);
     }
     update(e){
-        let vector = Store.camera.getWorldDirection();
-        let theta = calcTheta(vector);
+
+        let theta;
+
+        if ( e.detail.angle ){
+            theta = calcTheta(e.detail.angle);
+        } else {
+            let vector = Store.camera.getWorldDirection();
+            theta = calcTheta(vector);
+        }
         Store.interface.update(theta,  e.detail.point);
     }
 }

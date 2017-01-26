@@ -14,15 +14,12 @@ class ViveControls {
     constructor(amount){
 
         this.controllers = [];
-        this._INTERSECTED = [];
         this.tempMatrix = new THREE.Matrix4();
 
         // Bind methods
         this.update = this.update.bind(this);
-        this.cleanIntersected = this.cleanIntersected.bind(this);
         this.intersectObjects = this.intersectObjects.bind(this);
         this.getIntersections = this.getIntersections.bind(this);
-        this.activateObject = this.activateObject.bind(this);
         this.connectGamePads = this.connectGamepads.bind(this);
 
         // Add light for specular map
@@ -52,6 +49,7 @@ class ViveControls {
         this.controlsUpdateEvent = new CustomEvent('controlsupdate', {
             'detail': {
                 point: 0,
+                angle: 0,
             }
         });
         
@@ -96,6 +94,7 @@ class ViveControls {
                 this.controllers[i].standingMatrix = Store.controls.getStandingMatrix();
                 this.controllers[i].add(object.clone());
                 this.controllers[i].add(line.clone());
+                this.controllers[i]._INTERSECTED = [];
                 Store.scene.add(this.controllers[i]);
 
                 // Bind interface to object
@@ -104,7 +103,8 @@ class ViveControls {
                     this.controllers[i].addEventListener('menudown', Store.interface.toggleCompass, false);
                 }
 
-                this.controllers[i].addEventListener('triggerdown', this.activateObject, false);
+                this.controllerActiveObject = this.activateObject.bind(this.controllers[i]);
+                this.controllers[i].addEventListener('triggerdown', this.controllerActiveObject, false);
 
             }
 
@@ -112,9 +112,9 @@ class ViveControls {
 
     }
     activateObject(){
-        console.log('triggered');
+        console.log(this);
         if ( this._INTERSECTED ){
-            if ( typeof this._INTERSECTED.trigger === 'function' ){
+            if ( typeof this._INTERSECTED.trigger === 'function' && !this._INTERSECTED.isTriggered){
                 this._INTERSECTED.trigger();
             }
         }
@@ -125,11 +125,6 @@ class ViveControls {
         // triggerup, triggerdown, menudown
         this.controllers[position].addEventListener(eventType, fn);
     }
-    cleanIntersected(){
-        while ( this._INTERSECTED.length ) {
-            var object = this._INTERSECTED.pop();
-        }
-    }
     intersectObjects(controller){
         // Do not highlight if already selected
         if ( controller.userData.selected !== undefined ){return};
@@ -138,26 +133,26 @@ class ViveControls {
         let intersections = this.getIntersections(controller);
 
         if (intersections.length > 0) {
-            if ( this._INTERSECTED != intersections[0].object ) {
+            if ( controller._INTERSECTED != intersections[0].object ) {
                 let intersection = intersections[0];
-                this._INTERSECTED = intersection.object;
+                controller._INTERSECTED = intersection.object;
                 line.scale.z = intersection.distance;
 
-                this.controlsTriggeredEvent.detail.actionType = "SHOW_LABEL";
+                this.controlsTriggeredEvent.detail.actionType = "ADD_INTERSECTION";
+                this.controlsTriggeredEvent.detail.labelTexture = controller._INTERSECTED.labelTexture;
                 window.dispatchEvent(this.controlsTriggeredEvent);
-
             } 
         } else {
-            if ( this._INTERSECTED ){
+            if ( controller._INTERSECTED != undefined){
 
-                if ( typeof this._INTERSECTED.reset === 'function') {
-                    this._INTERSECTED.reset();
+                if ( typeof controller._INTERSECTED.reset === 'function' && controller._INTERSECTED.isTriggered) {
+                    controller._INTERSECTED.reset();
                 }
 
-                this.controlsTriggeredEvent.detail.actionType = "HIDE_LABEL";
+                this.controlsTriggeredEvent.detail.actionType = "REMOVE_INTERSECTION";
                 window.dispatchEvent(this.controlsTriggeredEvent);
 
-                this._INTERSECTED = undefined;
+                controller._INTERSECTED = undefined;
             }
         }
     }
@@ -173,9 +168,15 @@ class ViveControls {
     }
     update(){
         for (var i = 0; i < this.controllers.length; i++){
+
+            if ( i === 0 ){
+                this.controlsUpdateEvent.detail.angle = this.controllers[i].getWorldDirection();
+                window.dispatchEvent(this.controlsUpdateEvent);
+            }
+
             this.controllers[i].update();
             this.intersectObjects(this.controllers[i]);
-        }
+        }  
     }
 }
 

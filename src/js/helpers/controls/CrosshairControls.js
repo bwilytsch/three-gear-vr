@@ -34,7 +34,6 @@ class CrosshairControls {
         }); 
         this.stage = new PIXI.Container();
         this.graphics = new PIXI.Graphics();
-        this.texture = new THREE.Texture(this.textureRenderer.view);
 
         this.stage.addChild(this.graphics);
 
@@ -45,6 +44,8 @@ class CrosshairControls {
         this.hideLoader = this.hideLoader.bind(this);
         this.drawPercentage = this.drawPercentage.bind(this);
         this.update = this.update.bind(this);
+
+        this.texture = new THREE.Texture(this.textureRenderer.view);
 
         this.mesh = new THREE.Mesh(
             new THREE.PlaneBufferGeometry( 0.16, 0.16 ),
@@ -57,7 +58,6 @@ class CrosshairControls {
 
         this.mesh.position.z = -2;
         Store.camera.add(this.mesh);
-        this.draw();
 
         this.progressAnimation = new TimelineMax({pause: true, onUpdate: this.drawPercentage, onComplete: this.activateObject});
         this.progressAnimation.fromTo(this.state, 1, {progress: 0}, {progress: 1} );
@@ -72,7 +72,7 @@ class CrosshairControls {
         this.controlsTriggeredEvent = new CustomEvent('controlstriggered', {
             'detail': {
                 actionType: 'DEFAULT',
-                objectName: '',
+                labelTexture: '',
             }
         })
 
@@ -126,10 +126,12 @@ class CrosshairControls {
     }
     activateObject(){
         if ( this._INTERSECTED ){
-            if ( typeof this._INTERSECTED.trigger === 'function' ){
+            if ( typeof this._INTERSECTED.trigger === 'function' && !this._INTERSECTED.isTriggered){
                 this._INTERSECTED.trigger();
             }
             this.hideLoader();
+            this.controlsTriggeredEvent.detail.actionType = "REMOVE_INTERSECTION";
+            window.dispatchEvent(this.controlsTriggeredEvent);
         }
     }
     update(){
@@ -144,6 +146,11 @@ class CrosshairControls {
                 if ( this._INTERSECTED );
                     this._INTERSECTED = intersects[ 0 ].object;
                 if ( intersects[0].object.name !== "floor" ){
+                    // Change compass label to selected item
+                    this.controlsTriggeredEvent.detail.actionType = "ADD_INTERSECTION";
+                    this.controlsTriggeredEvent.detail.labelTexture = this._INTERSECTED.labelTexture;
+                    window.dispatchEvent(this.controlsTriggeredEvent);
+
                     this.showLoader();
                 } else {
                     this.hideLoader();
@@ -173,11 +180,13 @@ class CrosshairControls {
 
             if ( this._INTERSECTED ){
 
-                if ( typeof this._INTERSECTED.reset === 'function') {
+                if ( typeof this._INTERSECTED.reset === 'function' && this._INTERSECTED.isTriggered ) {
                     this._INTERSECTED.reset();
                 }
 
                 this.hideLoader();
+                this.controlsTriggeredEvent.detail.actionType = "REMOVE_INTERSECTION";
+                window.dispatchEvent(this.controlsTriggeredEvent);
                 this._INTERSECTED = undefined;
             }
 

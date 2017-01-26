@@ -2,14 +2,21 @@
 
 import * as THREE from 'three';
 import Store from '../globalStorage';
-import TextToLabel from '../../utils/textToLabel';
 
-const cfs = require('../../shaders/compass.frag');
-const cvs = require('../../shaders/compass.vert');
+// Compass Shaders
+const cfs = require('../../shaders/compass/compass3DC.frag');
+const cvs = require('../../shaders/compass/compass.vert');
+
+// Label Shaders
+const lfs = require('../../shaders/label/label.frag');
+const lvs = require('../../shaders/label/label.vert');
+
+const PI = Math.PI;
 
 // Costum shader for performance increase
 // Needs angle and intersection point from raycaster
 // Add label helpers for Store.targets
+// Intersection are made per controller
 
 class Compass3DC {
     constructor(type){
@@ -21,9 +28,8 @@ class Compass3DC {
         // Gaze or Controller based
         this.state = {
             isVisible: false,
+            labelIsVisible: false,
         }
-
-        this.textureGenerator = new TextToLabel();
 
         // Bind methods
         this.toggleVisibility = this.toggleVisibility.bind(this);
@@ -31,6 +37,8 @@ class Compass3DC {
         this.hideCompass = this.hideCompass.bind(this);
         this.showCompass = this.showCompass.bind(this);
         this.toggleCompass = this.toggleCompass.bind(this);
+        this.updateLabe = this.updateLabel.bind(this);
+        this.toggleLabel = this.toggleLabel.bind(this);
         this.hideLabel = this.hideLabel.bind(this);
         this.showLabel = this.showLabel.bind(this);
         this.update = this.update.bind(this);
@@ -57,7 +65,7 @@ class Compass3DC {
             }
         }
 
-        let circle = new THREE.Mesh(
+        this.circle = new THREE.Mesh(
             new THREE.PlaneBufferGeometry(this.size, this.size,1),
             new THREE.ShaderMaterial({
                 transparent: true,
@@ -68,23 +76,32 @@ class Compass3DC {
             })
         )
 
-        this.mesh.add(circle);
+        this.mesh.add(this.circle);
         this.mesh.position.y = this.size/4;
         this.mesh.rotation.x = -Math.PI/2;
 
 
         // Create Label with swapable textures
+         let labelUniforms = {
+             tex: {
+                 type: 't',
+                 value: '',
+             },
+             opacity: {
+                 type: 'f',
+                 value: 0.0,
+             }
+         }
+        
         this.label = new THREE.Mesh(
             new THREE.PlaneBufferGeometry(this.size, this.size/4, 1),
-            new THREE.MeshBasicMaterial({
-                color: 0xFFFFFF,
+            new THREE.ShaderMaterial({
+                vertexShader: lvs,
+                fragmentShader: lfs,
+                uniforms: labelUniforms,
                 transparent: true,
-                side: THREE.DoubleSide,
-                map: this.textureGenerator.create('Exhibit A'),
             })
         )
-
-        this.label.material.needsUpdate = true;
 
         this.label.position.z = this.size/4;
         this.label.position.y = this.size/8;
@@ -92,6 +109,7 @@ class Compass3DC {
         this.mesh.add(this.label);
 
         // Add EventListeners
+        window.addEventListener('controlsupdate', this.update, false);
 
     }
     toggleVisibility(){
@@ -105,11 +123,14 @@ class Compass3DC {
             case "HIDE_COMPASS":
                 this.hideCompass();
                 break;
-            case "SHOW_LABEL":
+            case "ADD_INTERSECTION":
+                if (!this.state.isVisible) return;
+                this.updateLabel(e.detail.labelTexture);
                 this.showLabel();
                 break;
-            case "HIDE_LABEL":
-                this.showLabel();
+            case "REMOVE_INTERSECTION":
+                if (!this.state.isVisible) return;
+                this.hideLabel();
                 break;
             default:
                 console.log('action not found');
@@ -125,21 +146,29 @@ class Compass3DC {
     hideCompass(){
         console.log('hide compass');
         this.toggleVisibility();
-        TweenMax.to(this.mesh.children[0].material.uniforms.opacity, this.animationSpeed/2, {value: 0});
+        TweenMax.to(this.circle.material.uniforms.opacity, this.animationSpeed/2, {value: 0});
     }
     showCompass(){
         console.log('show compass');
         this.toggleVisibility();
-        TweenMax.to(this.mesh.children[0].material.uniforms.opacity, this.animationSpeed, {value: 1});
+        TweenMax.to(this.circle.material.uniforms.opacity, this.animationSpeed, {value: 1});
+    }
+    toggleLabel(){
+        this.state.labelIsVisible = !this.state.labelIsVisible;
+    }
+    updateLabel(texture){
+        this.label.material.uniforms.tex.value = texture;
     }
     showLabel(){
-
+        this.toggleLabel();
+        TweenMax.to(this.label.material.uniforms.opacity, this.animationSpeed, {value: 1});
     }
     hideLabel(){
-
+        this.toggleLabel();
+        TweenMax.to(this.label.material.uniforms.opacity, this.animationSpeed, {value: 0});
     }
-    update(angle, point){
-        this.mesh.children[0].material.uniforms.angle.value = -angle;
+    update(angle){
+        this.circle.material.uniforms.angle.value = angle - PI;
     }
 }
 
