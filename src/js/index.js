@@ -76,7 +76,7 @@ const init = () => {
 
     Store.scene = new THREE.Scene();
 
-    Store.camera = new THREE.PerspectiveCamera(60, Store.res.width/Store.res.height, 0.01, 1000);
+    Store.camera = new THREE.PerspectiveCamera(60, Store.res.width/Store.res.height, 0.1, 1000);
     Store.scene.add(Store.camera);
 
     Store.controls = new THREE.VRControls( Store.camera );
@@ -270,8 +270,8 @@ const update = () => {
 
 const animate = () => {
     stats.begin();
-    render();
     update();
+    render();
     stats.end();
     Store.vrDisplay.requestAnimationFrame(animate);
 }

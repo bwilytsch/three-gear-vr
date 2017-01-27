@@ -15,6 +15,7 @@ import GearVRButton from '../utils/gearVRButton';
 
 // Resolve Glare/Crosshair, GearVR GamePad, Mouse, Vive Controller (+ Daydream?)
 
+
 class ControlsManager {
     constructor(){
         Store.raycaster = new THREE.Raycaster();

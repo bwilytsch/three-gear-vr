@@ -157,6 +157,7 @@ class Compass3D {
         TweenMax.to(this.label.material.uniforms.opacity, this.animationSpeed, {value: 0});
     }
     update(angle, point){
+        
         if (point) {
             this.mesh.position.x = point.x;
             this.mesh.position.z = point.z;

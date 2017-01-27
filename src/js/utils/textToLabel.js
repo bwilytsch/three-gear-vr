@@ -35,7 +35,6 @@ class TextToLabel {
         fontWeight: 500,
         lineHeight: 80,
     }){
-        console.log(text);
         this.ctx.clearRect(0,0, this.canvas.width, this.canvas.height);
         this.ctx.font= params.fontSize + "px Arial";
         this.ctx.textAlign = 'center';
