@@ -40,9 +40,9 @@ class MouseControls {
     onMouseDown(e){
         e.preventDefault();
         if ( this._INTERSECTED ){
-            if ( typeof this._INTERSECTED.trigger === 'function' ){
+            if ( typeof this._INTERSECTED.toggle === 'function' ){
                 window.dispatchEvent(this.controlsTriggeredEvent);
-                this._INTERSECTED.trigger();
+                this._INTERSECTED.toggle();
             }
         }
     }

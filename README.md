@@ -9,18 +9,24 @@ Sandbox for writing shaders, exploring new interaction patterns in VR, optimizin
 - GearVR
 - HTC Vive
 
+Soon
+- Oculus Touch
+- Daydream
 
-[demo](#) (soon)
+
+#### Demo
+[link](#) (soon)
 
 
 #### ToDOs:
-- [ ] Add Intro screen
-- [ ] Pre-Loader for assets
-- [ ] Add texture and shadows to the floor 3dof+
-- [ ] All objects are Audio targets
 - [ ] General cleanup/refactor
 - [ ] Refactor webpack dev/production code
 - [ ] Notification for controller not detected (GearVR + Vive)
+
+- [x] Add Intro screen
+- [x] Pre-Loader for assets
+- [x] Add texture and shadows to the floor 6dof
+- [x] All objects are Audio targets
 - [X] Include basic GearVR Gamepad controller
 - [X] Compass 2D/dekstop version with svg and css rotations
 - [X] SVG/2D implementation is very shakey

@@ -53,6 +53,7 @@ class CrosshairControls {
                 map: this.texture,
                 transparent: true,
                 side: THREE.DoubleSide,
+                depthWrite: false,
             })
         )
 
@@ -126,8 +127,8 @@ class CrosshairControls {
     }
     activateObject(){
         if ( this._INTERSECTED ){
-            if ( typeof this._INTERSECTED.trigger === 'function' && !this._INTERSECTED.isTriggered){
-                this._INTERSECTED.trigger();
+            if ( typeof this._INTERSECTED.toggle ){
+                this._INTERSECTED.toggle();
             }
             this.hideLoader();
             this.controlsTriggeredEvent.detail.actionType = "REMOVE_INTERSECTION";
@@ -179,11 +180,6 @@ class CrosshairControls {
         } else {
 
             if ( this._INTERSECTED ){
-
-                if ( typeof this._INTERSECTED.reset === 'function' && this._INTERSECTED.isTriggered ) {
-                    this._INTERSECTED.reset();
-                }
-
                 this.hideLoader();
                 this.controlsTriggeredEvent.detail.actionType = "REMOVE_INTERSECTION";
                 window.dispatchEvent(this.controlsTriggeredEvent);

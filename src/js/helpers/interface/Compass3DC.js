@@ -146,11 +146,13 @@ class Compass3DC {
     hideCompass(){
         console.log('hide compass');
         this.toggleVisibility();
+        this.label.material.depthWrite = false;
         TweenMax.to(this.circle.material.uniforms.opacity, this.animationSpeed/2, {value: 0});
     }
     showCompass(){
         console.log('show compass');
         this.toggleVisibility();
+        this.label.material.depthWrite = true;
         TweenMax.to(this.circle.material.uniforms.opacity, this.animationSpeed, {value: 1});
     }
     toggleLabel(){

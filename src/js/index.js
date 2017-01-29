@@ -20,6 +20,7 @@ import Store from './helpers/globalStorage';
 import ControlsManager from './helpers/ControlsManager';
 import InterfaceManager from './helpers/InterfaceManager';
 import LoadingManagerHelper from './helpers/LoadingManager';
+import AudioManager from './helpers/AudioManager';
 import TextToLabel from './utils/textToLabel';
 
 // CUSTOM SHADERS
@@ -30,19 +31,21 @@ const fs = require('./shaders/shader.frag');
 const svs = require('./shaders/marbel.vert');
 const sfs = require('./shaders/marbel.frag');
 
-let testMesh, skyBox;
+const fvs = require('./shaders/floor/floor.vert');
+const ffs = require('./shaders/floor/floor.frag');
+
+let box, skyBox;
 
 require('../scss/style.scss');
 
 let manager;
 let controlsManager;
 let interfaceManager;
+let audioManager;
 
-Store.loadingManager = new LoadingManagerHelper();
-
-let stats = new Stats();
-stats.showPanel(0);
-document.body.appendChild(stats.domElement);
+// let stats = new Stats();
+// stats.showPanel(0);
+// document.body.appendChild(stats.domElement);
 
 // General
 Store.res = {};
@@ -100,6 +103,9 @@ const init = () => {
     controlsManager = new ControlsManager();
     controlsManager.setControlsType(interfaceManager.connect);
 
+    // Audio manager
+    audioManager = new AudioManager();
+
     // Insert Particles
     let partCount = 10000;
     let distance =  3;
@@ -137,6 +143,7 @@ const init = () => {
 
     // Insert Test Object
     Store.targets = new THREE.Group();
+    Store.shadowTargets = [];
     Store.scene.add(Store.targets);
 
     Store.textureLoader = new THREE.TextureLoader(Store.loadingManager);
@@ -168,64 +175,154 @@ const init = () => {
     studioMaterial.uniforms.tex.value.wrapT = 
     THREE.ClampToEdgeWrapping;
 
+    box = new THREE.Mesh(
+        // new THREE.TorusKnotBufferGeometry( 0.5, 0.15, 100, 16 ),
+        new THREE.BoxBufferGeometry(1,1,1),
+        studioMaterial,
+    )
+
+    box.toggle = function(){};
+
+    box.name = 'Exhibit A: Steps';
+    box.labelTexture = textToLabelLoader.create(box.name);
+    box.isTriggered = false;
+    box.position.z = -6.4;
+    box.position.y = 1.8;
+    Store.shadowTargets.push(box);
+    Store.targets.add(box);
+
+    audioManager.create(box, 'assets/audio/footsteps_concrete.ogg');
+
+    let sphere = new THREE.Mesh(
+        // new THREE.TorusKnotBufferGeometry( 0.5, 0.15, 100, 16 ),
+        new THREE.SphereBufferGeometry(0.5,32,32),
+        studioMaterial,
+    )
+
+    sphere.toggle = function(){};
+
+    sphere.name = 'Exhibit B: Storm';
+    sphere.labelTexture = textToLabelLoader.create(sphere.name);
+    sphere.isTriggered = false;
+    sphere.position.z = 6.4;
+    sphere.position.y = 1.8;
+    Store.shadowTargets.push(sphere);
+    Store.targets.add(sphere);
+
+    audioManager.create(sphere, 'assets/audio/thunder_rain.ogg');
+
+    // Env Model
     var loader = new THREE.JSONLoader(Store.loadingManager);
     loader.load('assets/studio_hires.json', (geometry) => {
-        let tempMesh = new THREE.Mesh(
+        let studio = new THREE.Mesh(
             new THREE.BufferGeometry().fromGeometry(geometry),
             new THREE.MeshBasicMaterial({
                 color: 0xFFFFFFF,
                 map: Store.textureLoader.load('assets/studio_hi_res_tiles.jpg'),
             })
         )
-        tempMesh.name = "AO Test object";
-        Store.scene.add(tempMesh);
-        tempMesh.position.y = 1.2;
+        studio.name = "AO Test object";
+        Store.scene.add(studio);
+        studio.rotation.y = Math.PI/2;
+        studio.position.y = 1.2;
     })
-
-    testMesh = new THREE.Mesh(
-        // new THREE.TorusKnotBufferGeometry( 0.5, 0.15, 100, 16 ),
-        new THREE.BoxBufferGeometry(1,1,1),
-        studioMaterial,
-    )
-
-    testMesh.trigger = function(){
-        this.isTriggered = true;
-        console.log(this.name + ' was triggered');
-    }
-
-    testMesh.reset = function(){
-        this.isTriggered = false;
-        console.log(this.name + ' was reset');
-    }
-
-    testMesh.name = 'Exhibit A';
-    testMesh.labelTexture = textToLabelLoader.create(testMesh.name);
-    testMesh.isTriggered = false;
-    testMesh.position.z = -4;
-    testMesh.position.y = 1.2;
-    Store.targets.add(testMesh);
     
     // Needs specular & texture map and shadows on vive (and lower devices?)
+    let tiles = {
+        diffuse: 'assets/tiles/diffuse.png',
+        normal: 'assets/tiles/normal.png',
+        specular: 'assets/tiles/specular.png',
+        repeatW: 6,
+        repeatH: 6,
+    }
+
+    let floorUniforms = {
+        shininess: {
+            type: 'f',
+            value:0.2,
+        },
+        repeatUV: {
+            type: 'v2',
+            value: new THREE.Vector2(tiles.repeatW,tiles.repeatH),
+        },
+        diffuseMap: {
+            type: 't',
+            value: Store.textureLoader.load(tiles.diffuse), // add diffuseMap
+        },
+        specularMap: {
+            type: 't',
+            value: Store.textureLoader.load(tiles.specular), // add specularMap
+        },
+        normalMap: {
+            type: 't',
+            value: Store.textureLoader.load(tiles.normal), // add normalMap
+        },
+    }
 
     let floor = new THREE.Mesh(
         new THREE.PlaneBufferGeometry(22.6,15,1),
-        new THREE.MeshBasicMaterial({
-            color: 0x151515,
-        })
+        new THREE.ShaderMaterial({
+                vertexShader: fvs,
+                fragmentShader: ffs,
+                uniforms: floorUniforms,
+            })
     )
+
+    floor.material.receiveShadow = true;
+
+    floor.material.uniforms.normalMap.value.wrapS =
+    floor.material.uniforms.normalMap.value.wrapT =
+    floor.material.uniforms.diffuseMap.value.wrapS =
+    floor.material.uniforms.diffuseMap.value.wrapT =
+    floor.material.uniforms.specularMap.value.wrapS =
+    floor.material.uniforms.specularMap.value.wrapT =
+    THREE.RepeatWrapping;
 
     floor.name = "floor";
     floor.labelTexture = textToLabelLoader.create(floor.name);
     floor.rotation.x = -Math.PI / 2;
+    floor.rotation.z = -Math.PI/2;
     floor.position.y = -1.4;
     Store.targets.add(floor);
+
+    // Pilar
+    loader.load('assets/pilar.json', (geometry) => {
+        let pilar = new THREE.Mesh(
+            new THREE.BufferGeometry().fromGeometry(geometry),
+            new THREE.MeshBasicMaterial({
+                color: 0xFFFFFF,
+                map: Store.textureLoader.load('assets/pilar.png'),
+            })
+        )
+
+        let pilarShadow = new THREE.Mesh(
+            new THREE.PlaneBufferGeometry(7.2,7.2,1),
+            new THREE.MeshBasicMaterial({
+                color: 0x000000,
+                map: Store.textureLoader.load('assets/pilar_shadow.png'),
+                transparent: true,
+                side: THREE.DoubleSide,
+            })
+        )
+        pilarShadow.position.y = -1.23;
+        pilarShadow.rotation.x = Math.PI/2;
+        pilar.add(pilarShadow);
+        pilar.position.z = box.position.z;
+        Store.shadowTargets.push(pilar);
+        Store.scene.add(pilar);
+
+        let spherePilar = pilar.clone();
+        spherePilar.position.z = sphere.position.z;
+        Store.shadowTargets.push(spherePilar);
+        Store.scene.add(spherePilar);
+    });
     
     bindEventListeners();
-    Store.loadingManager.onLoad = start;
-}
+
+};
 
 const start = () => {
-    console.log('loading done')
+    console.log('Starting experience')
     // GearVR Hack/Workaround
     if ( navigator.getVRDisplays ){
         navigator.getVRDisplays().then((displays) => {
@@ -242,6 +339,8 @@ const start = () => {
         })
     }
 }
+
+Store.loadingManager = new LoadingManagerHelper(start);
 
 const bindEventListeners = () => {
     window.addEventListener('resize', onWindowResize, false);
@@ -263,18 +362,20 @@ const render = () => {
 const update = () => {
     Store.controls.update();
     controlsManager.update();
-    testMesh.rotation.x += 0.02;
-    testMesh.rotation.y += 0.02;
+    // testMesh.rotation.x += 0.02;
+    // testMesh.rotation.y += 0.02;
     // Particles.material.uniforms.time.value += 0.0002;
 }
 
 const animate = () => {
-    stats.begin();
+    // stats.begin();
     update();
     render();
-    stats.end();
+    // stats.end();
     Store.vrDisplay.requestAnimationFrame(animate);
 }
 
-window.onload = init();
+window.onload = () => {
+    Store.loadingManager.connect(init);
+};
 

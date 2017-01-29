@@ -24,14 +24,68 @@ class ViveControls {
 
         // Add light for specular map
         Store.scene.add( new THREE.HemisphereLight( 0x606060, 0x404040 ) );
-        var light = new THREE.SpotLight( 0xffffff, 1  );
-        light.position.set( 8, 8, 8 );
-        light.target.position.set(0,0,0);
+        var light = new THREE.SpotLight( 0xffffff, 1 );
+        light.distance = 200;
+        light.angle = 1;
+        light.penumbra = 1;
+        light.decay = 1;
+        light.position.set( 0, 8, 6.4 );
+        light.target.position.set(0,0,4.4);
         light.castShadow = true;
-        light.shadow.mapSize.width = 512;
-        light.shadow.mapSize.height = 512;
-        
+        light.shadow.mapSize.width = 2024;
+        light.shadow.mapSize.height = 2024;
+        light.shadow.camera.near = 0.5;
+        light.shadow.camera.far = 10
+        Store.scene.add( light.target );
         Store.scene.add( light )
+
+        let secondLight = light.clone();
+        secondLight.position.set( 0, 8, -6.4 );
+        secondLight.target.position.set(0,0,-4.4);
+        Store.scene.add( secondLight.target );
+        Store.scene.add( secondLight );
+
+        //Create a helper for the shadow camera (optional)
+        // var helper = new THREE.CameraHelper( light.shadow.camera );
+        // let helper2 = new THREE.CameraHelper( secondLight.shadow.camera );
+        // Store.scene.add( helper );
+        // Store.scene.add( helper2 );
+
+        // Set shadows
+        Store.renderer.shadowMap.enabled = true;
+
+        for ( var i = 0, len = Store.shadowTargets.lenght; i < len; i++ ){
+            let shadowTarget = Store.shadowTargets[i];
+            shadowTargets.receiveShadow = true;
+            shadowTarget.castShadow = true;
+        }
+
+        Store.targets.children.map((object) => {
+            if ( object.name === "floor" ){
+
+                let diffuse = Store.textureLoader.load('../../assets/tiles/diffuse.png');
+                diffuse.wrapS = diffuse.wrapT = THREE.RepeatWrapping;
+                diffuse.repeat.set( 8, 8 );
+
+                let normal = Store.textureLoader.load('../../assets/tiles/normal.png');
+                normal.wrapS = normal.wrapT = THREE.RepeatWrapping;
+                normal.repeat.set( 8, 8 );
+
+                let specular = Store.textureLoader.load('../../assets/tiles/specular.png');
+                specular.wrapS = specular.wrapT = THREE.RepeatWrapping;
+                specular.repeat.set( 8, 8 );
+
+                object.material = new THREE.MeshPhongMaterial({
+                    map: diffuse,
+                    normalMap: normal,
+                    specularMap: specular,
+                })
+
+                object.receiveShadow = true;
+
+                console.log(object);
+            }
+        })
 
         // Wait for controllers to connect
         let gamepads = navigator.getGamepads ? navigator.getGamepads() : (navigator.webkitGetGamepads ? navigator.webkitGetGamepads() : []);
@@ -73,6 +127,7 @@ class ViveControls {
             let controller = object.children[0];
             controller.material.map = Store.textureLoader.load('onepointfive_texture.png');
             controller.material.specularMap = Store.textureLoader.load('onepointfive_spec.png');
+            controller.castShadow = true;
 
             // Add decteion lines
             let lineGeometry = new THREE.Geometry();
@@ -114,8 +169,8 @@ class ViveControls {
     activateObject(){
         console.log(this);
         if ( this._INTERSECTED ){
-            if ( typeof this._INTERSECTED.trigger === 'function' && !this._INTERSECTED.isTriggered){
-                this._INTERSECTED.trigger();
+            if ( typeof this._INTERSECTED.toggle === 'function'){
+                this._INTERSECTED.toggle();
             }
         }
     }
@@ -145,10 +200,6 @@ class ViveControls {
         } else {
             if ( controller._INTERSECTED != undefined){
 
-                if ( typeof controller._INTERSECTED.reset === 'function' && controller._INTERSECTED.isTriggered) {
-                    controller._INTERSECTED.reset();
-                }
-
                 this.controlsTriggeredEvent.detail.actionType = "REMOVE_INTERSECTION";
                 window.dispatchEvent(this.controlsTriggeredEvent);
 
@@ -163,7 +214,7 @@ class ViveControls {
         if ( Store.targets !== undefined ) {
             return Store.raycaster.intersectObjects(Store.targets.children);
         } else {
-            return [];
+            return controller._INTERSECTED;
         }
     }
     update(){

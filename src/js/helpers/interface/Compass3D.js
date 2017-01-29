@@ -74,6 +74,7 @@ class Compass3D {
                 fragmentShader: cfs,
                 uniforms,
                 transparent: true,
+                depthWrite: false,
                 side: THREE.DoubleSide,
             })
         )
